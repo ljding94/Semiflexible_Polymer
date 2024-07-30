@@ -3,6 +3,7 @@ import numpy as np
 from matplotlib.cm import ScalarMappable
 from matplotlib import colormaps as cm
 from matplotlib.colors import Normalize
+from scipy.optimize import curve_fit
 
 
 def plot_polymer_config(filename, finfo, show=False):
@@ -12,19 +13,19 @@ def plot_polymer_config(filename, finfo, show=False):
 
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
-    #ax.plot(x, y, z, "-o", color="gray", mfc="black", mec="black")
+    # ax.plot(x, y, z, "-o", color="gray", mfc="black", mec="black")
     ax.plot(x, y, z, "-", color="gray")
     ax.plot([x[0]], [y[0]], [z[0]], "o", color="red", label="start")
     ax.plot([x[-1]], [y[-1]], [z[-1]], "o", color="blue", label="end")
 
-    #ymax = max(np.max(y), -np.min(y))
-    #zmax = max(np.max(z), -np.min(z))
+    # ymax = max(np.max(y), -np.min(y))
+    # zmax = max(np.max(z), -np.min(z))
     ax.set_xlim(np.min(x)-1, np.max(x)+1)
     ax.set_ylim(np.min(y)-1, np.max(y)+1)
     ax.set_zlim(np.min(z)-1, np.max(z)+1)
 
-    #ax.set_ylim(-ymax-1, ymax+1)
-    #ax.set_zlim(-zmax-1, zmax+1)
+    # ax.set_ylim(-ymax-1, ymax+1)
+    # ax.set_zlim(-zmax-1, zmax+1)
 
     ax.legend()
     ax.set_xlabel('X')
@@ -60,42 +61,44 @@ def plot_polymer_config(filename, finfo, show=False):
     plt.close()
 
 
-def plot_MC_step(filename, finfo):
+def plot_MC_step(filename, finfo, show=False):
     data = np.genfromtxt(filename, delimiter=',', skip_header=4)
     E, Tb, X, Y, Z, R = data[:, 0], data[:, 1], data[:, 2], data[:, 3], data[:, 4], data[:, 5]
 
-    fig, axs = plt.subplots(7, 1, figsize=(3, 15))
+    fig, axs = plt.subplots(6, 1, figsize=(5, 15))
 
-    axs[1].plot(range(len(Tb)), Tb, "*")
+    axs[0].plot(range(len(Tb)), Tb, "*")
+    axs[0].set_xlabel("MC sweep (1000L step per sweep)")
+    axs[0].set_ylabel("Tb")
+
+    axs[1].plot(range(len(X)), X, "*")
     axs[1].set_xlabel("MC sweep (1000L step per sweep)")
-    axs[1].set_ylabel("Tb")
+    axs[1].set_ylabel("X")
 
-    axs[2].plot(range(len(X)), X, "*")
+    axs[2].plot(range(len(Y)), Y, "*")
     axs[2].set_xlabel("MC sweep (1000L step per sweep)")
-    axs[2].set_ylabel("X")
+    axs[2].set_ylabel("Y")
 
-    axs[3].plot(range(len(Y)), Y, "*")
+    axs[3].plot(range(len(Z)), Z, "*")
     axs[3].set_xlabel("MC sweep (1000L step per sweep)")
-    axs[3].set_ylabel("Y")
+    axs[3].set_ylabel("Z")
 
-    axs[4].plot(range(len(Z)), Z, "*")
+    axs[4].plot(range(len(R)), R, "*")
     axs[4].set_xlabel("MC sweep (1000L step per sweep)")
-    axs[4].set_ylabel("Z")
+    axs[4].set_ylabel("R")
 
-    axs[5].plot(range(len(R)), R, "*")
+    axs[5].plot(range(len(E)), E, "*")
     axs[5].set_xlabel("MC sweep (1000L step per sweep)")
-    axs[5].set_ylabel("R")
-
-    axs[6].plot(range(len(E)), E, "*")
-    axs[6].set_xlabel("MC sweep (1000L step per sweep)")
-    axs[6].set_ylabel("Energy")
+    axs[5].set_ylabel("Energy")
     plt.tight_layout()
     plt.savefig(filename.replace(".csv", ".png"))
+    if show:
+        plt.show()
     plt.close()
 
 
 def plot_obs(folder, finfos, parameters, xparam):
-    fig, axs = plt.subplots(1, 3, figsize=(12, 3))
+    fig, axs = plt.subplots(1, 5, figsize=(17, 3))
 
     xpar = []
     all_X, all_X_err = [], []
@@ -154,22 +157,68 @@ def plot_obs(folder, finfos, parameters, xparam):
     axs[0].set_ylabel("end-end distance")
     axs[0].legend()
 
-    for i in range(len(all_Sq)):
-        axs[1].loglog(all_qB[i], all_Sq[i], "-", label=f"{xparam}={xpar[i]}")
-    axs[1].set_xlabel("qB")
-    axs[1].set_ylabel("S(qB)")
+    axs[1].loglog(xpar, np.array(all_X_err)*np.sqrt(1000), marker="o", ls="None", label=r"$\left<X^2\right>-\left<X\right>^2$")
+    axs[1].loglog(xpar, np.array(all_Y_err)*np.sqrt(1000), marker="x", ls="None", label=r"$\left<Y^2\right>-\left<Y\right>^2$")
+    axs[1].loglog(xpar, np.array(all_Z_err)*np.sqrt(1000), marker="s", ls="None", label=r"$\left<Z^2\right>-\left<Z\right>^2$")
+    axs[1].loglog(xpar, np.array(all_R_err)*np.sqrt(1000), marker="+", ls="None", label=r"$\left<R^2\right>-\left<R\right>^2$")
+    axs[1].set_xlabel(xparam)
+    axs[1].set_ylabel("end-end variation")
     axs[1].legend()
 
+    Sq_rod = calc_Sq_discrete_infinite_thin_rod(all_qB[0], parameters[0][0])
+    for i in range(len(all_Sq)):
+        axs[2].loglog(all_qB[i], all_Sq[i], "-", label=f"{xpar[i]}")
+    axs[2].loglog(all_qB[0], Sq_rod, "k--", label="rod")
+    axs[2].set_xlabel("qB")
+    axs[2].set_ylabel("S(qB)")
+    axs[2].legend(title=xparam, ncol=2)
+
+    all_lp_theta = []
+    all_lp = []
     for i in range(len(all_tts)):
         print("all_tts[i][1]", all_tts[i][1])
-        print("-1/np.log(all_tts[i][1])", -1/np.log(all_tts[i][1]))
-        lp = -1/np.log(all_tts[i][1])
+        lp_theta = -1/np.log(all_tts[i][1])
+        all_lp_theta.append(lp_theta)
+        print("-1/np.log(all_tts[i][1])", lp_theta)
+        lp = fit_l_persistence(all_spB[i][:5], all_tts[i][:5])
+        print("fitted lp", lp)
+        all_lp.append(lp)
 
-        axs[2].semilogy(all_spB[i][:20], all_tts[i][:20], "-", label=f"{xparam}={xpar[i]}")
-        #axs[2].plot(all_spB[i], all_tts[i], "-", label=f"{xparam}={xpar[i]}")
-    axs[2].set_xlabel(r"$s/B$")
-    axs[2].set_ylabel(r"$<\cos{\theta}(s)>$")
-    axs[2].legend()
+        axs[3].semilogy(all_spB[i][:15], all_tts[i][:15], "s", mfc="None", label=fr"{xpar[i]}")
+        axs[3].semilogy(all_spB[i][:7], np.exp(-all_spB[i][:7]/lp), color=axs[2].lines[-1].get_color())
+        # axs[2].plot(all_spB[i], all_tts[i], "-", label=f"{xparam}={xpar[i]}")
+    axs[3].set_xlabel(r"$s/B$")
+    axs[3].set_ylabel(r"$\left<\cos{\theta}(s)\right>$")
+    axs[3].legend(title=xparam, ncol=2)
+
+    axs[4].plot(xpar, all_lp_theta, "o-", label=r"$-1/log(\left<\cos{\theta}(1)\right>)$")
+    axs[4].plot(xpar, all_lp, "x-", label=r"fitted $l_p$")
+    axs[4].set_xlabel(xparam)
+    axs[4].set_ylabel(r"persistance length")
+    axs[4].legend()
+
     plt.tight_layout()
     plt.savefig(f"{folder}/obs_{xparam}.png")
     plt.close()
+
+
+def calc_Sq_discrete_infinite_thin_rod(q, L):
+    # numereical calculation
+    Sq = [1.0/L for i in range(len(q))]
+    for k in range(len(q)):
+        Sqk = 0
+        qk = q[k]
+        for i in range(L-1):
+            for j in range(i+1, L):
+                Sqk += 2.0*np.sin(qk*(i-j))/(qk*(i-j))/(L*L)
+        Sq[k] += Sqk
+    return np.array(Sq)
+
+
+def ax_fit(x, a):
+    return a*x
+
+
+def fit_l_persistence(spB, tts):
+    popt, pcov = curve_fit(ax_fit, spB, np.log(tts))
+    return -1/popt[0]

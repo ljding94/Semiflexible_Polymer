@@ -28,7 +28,8 @@ int main(int argc, char const *argv[])
         Epar.kappa = std::atof(argv[2]);
         Epar.f = std::atof(argv[3]);
         Epar.g = std::atof(argv[4]);
-        double d_theta = M_PI/(1.0+std::sqrt(Epar.kappa));
+        double d_theta = M_PI*2.0/3/(1.0+std::sqrt(Epar.kappa));
+        std::cout<<"d_theta: "<<d_theta<<std::endl;
 
 
         semiflexible_polymer polymer(L, Epar, d_theta);
@@ -42,10 +43,10 @@ int main(int argc, char const *argv[])
         if(argc == 6)
         {
             // local run
-            bin_num = 100;
+            bin_num = 50;
             therm_sweeps = 1000;
             MC_sweeps = 2000;
-            step_per_sweep = L*L*L; //  note: 10L^2 * (1000+1000+2000) for L1000 take 400s
+            step_per_sweep = L*L; //  note: 10L^2 * (1000+1000+2000) for L1000 take 400s
             // use "prog name par* local" for local running
             // used for local running!
             std::cout << "running on local machine\n";

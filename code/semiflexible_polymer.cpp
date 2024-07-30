@@ -52,82 +52,99 @@ semiflexible_polymer::semiflexible_polymer(double L_, Energy_parameter Epar_, do
     // above initial configuration give 0 bending and shear energy
 }
 
-int semiflexible_polymer::update_bead_concerted_rotation(int bead_i)
+int semiflexible_polymer::update_bead_concerted_rotation(int bead_i, int bead_j)
 {
-    // bead_i is between 1 and L-1
-    bead old_bead;
-    bead old_bead_pre; // this is also affected then i is not on the start/end
+    if (bead_i > bead_j)
+    {
+        // swap, make sure i is before j
+        int bead = bead_i;
+        bead_i = bead_j;
+        bead_j = bead;
+    }
+    if (bead_j > L)
+    {
+        std::cout << "Error: bead_j > L" << std::endl;
+        return 0;
+    }
+    std::vector<bead> old_beads{}; // [bead_i, bead_j]
     double old_E = 0;
     double new_E = 0;
     double old_Tb = 0;
     double new_Tb = 0;
-    int satisfy_self_avoiding = 0;
 
-    old_bead = polymer[bead_i];
-    old_bead_pre = polymer[bead_i - 1]; // this is also affected then i is not on the start/end
-    // bead_i is the middle (i-1)--(i)--(i+1)--
+    for (int j = bead_i; j < bead_j; j++)
+    {
+        old_beads.push_back(polymer[j]); // (i),(i+1)... up to --(j),
+    }
     // what updates:
-    // t(i-1), t(i), r(i)
-    // Energy change related: since (i-1).t and (i).t changes
-    // bending (i-2)--(i-1)-- on (i-1) and  (i)--(i+1)-- on (i+1)
-    // streching: no change since (i-1) and (i+1) are fixed
-    // shearing (i-1)-- and (i)--
+    // t(i), r(i+1), t(i+1),..... r(j-1), t(j-1)
+    // Energy change related:
+    // bending (i-1)--(i)-- on (i) and  (j-1)--(j)-- on (i)
+    // streching: no change since (0) and (L) are fixed
+    // shearing (i) up to (j-1)
 
-    old_Tb = (bead_i == L - 1) ? 0 : calc_bending_of_two_t(polymer[bead_i].t, polymer[bead_i + 1].t);
-    old_Tb += (bead_i == 1) ? 0 : calc_bending_of_two_t(polymer[bead_i - 1].t, polymer[bead_i - 2].t);
-    // bead_i -2 non existent if bead_i == 1
-    // bead_i +1 non existent if bead_i == L - 1
+    old_Tb = (bead_i == 0) ? 0 : calc_bending_of_two_t(polymer[bead_i - 1].t, polymer[bead_i].t);
+    old_Tb += (bead_j == L) ? 0 : calc_bending_of_two_t(polymer[bead_j - 1].t, polymer[bead_j].t);
+    // bead_L has no t
 
     old_E = 0.5 * Epar.kappa * old_Tb;
-    old_E += -Epar.g * polymer[bead_i - 1].r[2] * polymer[bead_i - 1].t[0];
-    old_E += -Epar.g * polymer[bead_i].r[2] * polymer[bead_i].t[0];
+    for (int j = bead_i; j < bead_j; j++)
+    {
+        old_E += -Epar.g * polymer[j].r[2] * polymer[j].t[0];
+    }
 
     // update
-    // 1. find the unit vector uni_t from (i-1) to (i+1)
-    std::vector<double> uni_t = {polymer[bead_i - 1].t[0] + polymer[bead_i].t[0],
-                                 polymer[bead_i - 1].t[1] + polymer[bead_i].t[1],
-                                 polymer[bead_i - 1].t[2] + polymer[bead_i].t[2]};
+    // 1. find the unit vector uni_t from (i) to (j)
+    std::vector<double> uni_t = {polymer[bead_j].r[0] - polymer[bead_i].r[0],
+                                 polymer[bead_j].r[1] - polymer[bead_i].r[1],
+                                 polymer[bead_j].r[2] - polymer[bead_i].r[2]};
 
     double uni_t_norm = std::sqrt(uni_t[0] * uni_t[0] + uni_t[1] * uni_t[1] + uni_t[2] * uni_t[2]);
     uni_t[0] /= uni_t_norm;
     uni_t[1] /= uni_t_norm;
     uni_t[2] /= uni_t_norm;
 
-    // return if uni_t is parallel to t(i-1) or t(i)
-    if (std::abs(inner_product(uni_t, polymer[bead_i - 1].t) - 1) < 1e-6)
+    // 2. rotate everything between (i) and (j) about uni_t for random angle theta in renormalized [-d_theta,d_theta]
+    double theta = d_theta / (1 + (Epar.f + Epar.g) * (bead_j - bead_i)) * (2 * rand_uni(gen) - 1);
+    // TODO: consider using simpler algorithm than Rodrigues_rotation
+
+    std::vector<double> rik{0, 0, 0};
+    double rik_norm;
+    for (int k = bead_i; k < bead_j; k++)
     {
-        // std::cout<<"Error: uni_t is parallel to t(i-1)"<<std::endl;
-        return 1;
+        // rik = {polymer[k].r[0] - polymer[bead_i].r[0], polymer[k].r[1] - polymer[bead_i].r[1], polymer[k].r[2] - polymer[bead_i].r[2]};
+        // rik_norm = std::sqrt(rik[0] * rik[0] + rik[1] * rik[1] + rik[2] * rik[2]);
+        polymer[k].t = Rodrigues_rotation(polymer[k].t, uni_t, theta); // this returned renomalized result
     }
-
-    // 2. rotate both (i-1).t and (i).t about uni_t for random angle theta in [-d_theta,d_theta]
-    double theta = d_theta * (2 * rand_uni(gen) - 1);
-    polymer[bead_i - 1].t = Rodrigues_rotation(polymer[bead_i - 1].t, uni_t, theta);
-    polymer[bead_i].t = Rodrigues_rotation(polymer[bead_i].t, uni_t, theta);
-    polymer[bead_i].r = {polymer[bead_i - 1].r[0] + polymer[bead_i - 1].t[0],
-                         polymer[bead_i - 1].r[1] + polymer[bead_i - 1].t[1],
-                         polymer[bead_i - 1].r[2] + polymer[bead_i - 1].t[2]};
-    // check for r(i+1)
-
-    /*
-    if (bead_i != L-1 && ([bead_i].r[0] + polymer[bead_i].t[0] != polymer[bead_i + 1].r[0] || polymer[bead_i].r[1] + polymer[bead_i].t[1] != polymer[bead_i + 1].r[1] || polymer[bead_i].r[2] + polymer[bead_i].t[2] != polymer[bead_i + 1].r[2]))
+    // reconstruct r
+    for (int k = bead_i + 1; k < bead_j; k++)
     {
-        std::cout << "Error: r(i+1) not match after update bead_i" << std::endl;
+        polymer[k].r = {polymer[k - 1].r[0] + polymer[k - 1].t[0],
+                        polymer[k - 1].r[1] + polymer[k - 1].t[1],
+                        polymer[k - 1].r[2] + polymer[k - 1].t[2]};
+    }
+    if (std::abs(polymer[bead_j - 1].r[0] + polymer[bead_j - 1].t[0] - polymer[bead_j].r[0]) > 1e-6 ||
+        std::abs(polymer[bead_j - 1].r[1] + polymer[bead_j - 1].t[1] - polymer[bead_j].r[1]) > 1e-6 ||
+        std::abs(polymer[bead_j - 1].r[2] + polymer[bead_j - 1].t[2] - polymer[bead_j].r[2]) > 1e-6)
+    {
+        std::cout << "Error: r(j) not match after update bead_i" << std::endl;
+        std::cout << "0:" << polymer[bead_j - 1].r[0] + polymer[bead_j - 1].t[0] << " " << polymer[bead_j].r[0] << std::endl;
+        std::cout << "1:" << polymer[bead_j - 1].r[1] + polymer[bead_j - 1].t[1] << " " << polymer[bead_j].r[1] << std::endl;
+        std::cout << "2:" << polymer[bead_j - 1].r[2] + polymer[bead_j - 1].t[2] << " " << polymer[bead_j].r[2] << std::endl;
         return 0;
     }
-    */
-
     // new energy
-    new_Tb = (bead_i == L - 1) ? 0 : calc_bending_of_two_t(polymer[bead_i].t, polymer[bead_i + 1].t);
-    new_Tb += (bead_i == 1) ? 0 : calc_bending_of_two_t(polymer[bead_i - 1].t, polymer[bead_i - 2].t);
+    new_Tb = (bead_i == 0) ? 0 : calc_bending_of_two_t(polymer[bead_i - 1].t, polymer[bead_i].t);
+    new_Tb += (bead_j == L) ? 0 : calc_bending_of_two_t(polymer[bead_j - 1].t, polymer[bead_j].t);
+    // bead_L has no t
     new_E = 0.5 * Epar.kappa * new_Tb;
-    new_E += -Epar.g * polymer[bead_i - 1].r[2] * polymer[bead_i - 1].t[0];
-    new_E += -Epar.g * polymer[bead_i].r[2] * polymer[bead_i].t[0];
-
-    satisfy_self_avoiding = satisfy_self_avoiding_condition(bead_i);
+    for (int j = bead_i; j < bead_j; j++)
+    {
+        new_E += -Epar.g * polymer[j].r[2] * polymer[j].t[0];
+    }
 
     // Metropolis
-    if (satisfy_self_avoiding && rand_uni(gen) < std::exp(-beta * (new_E - old_E)))
+    if (satisfy_self_avoiding_condition_by_group(bead_i, bead_j) && rand_uni(gen) < std::exp(-beta * (new_E - old_E)))
     {
         E_sys += new_E - old_E;
         Tb_sys += new_Tb - old_Tb;
@@ -135,8 +152,11 @@ int semiflexible_polymer::update_bead_concerted_rotation(int bead_i)
     }
     else
     {
-        polymer[bead_i] = old_bead;
-        polymer[bead_i - 1] = old_bead_pre;
+        for (int j = bead_i; j < bead_j; j++)
+        {
+            polymer[j] = old_beads[j - bead_i];
+        }
+
         return 0;
     }
 }
@@ -201,16 +221,36 @@ int semiflexible_polymer::update_bead_tangent_rotation(int bead_i)
     double r_ij_v = 0;
     double r_ij_w = 0;
     double r_ij_t = 0;
+
+    double tj_v = 0;
+    double tj_w = 0;
+    double tj_t = 0;
+    double tj_norm = 0;
     // note: txw = v
     // check othorgonal of v,w,t
     if (std::abs(inner_product(uni_v, uni_w)) > 1e-6 || std::abs(inner_product(uni_v, polymer[bead_i].t)) > 1e-6 || std::abs(inner_product(uni_w, polymer[bead_i].t)) > 1e-6)
     {
         std::cout << "Error: uni_v, uni_w, t not orthogonal" << std::endl;
+        std::cout << inner_product(uni_v, uni_w) << ":" << inner_product(uni_v, polymer[bead_i].t) << ":" << inner_product(uni_w, polymer[bead_i].t) << std::endl;
         return 0;
     }
-
-    for (int j = bead_i + 1; j < polymer.size(); j++)
+    std::vector<double> ti_old = polymer[bead_i].t;
+    for (int j = bead_i; j < polymer.size() - 1; j++) // polymer[L] has no t
     {
+        // rotate tj towards uni_w by theta
+        tj_v = inner_product(polymer[j].t, uni_v);
+        tj_w = inner_product(polymer[j].t, uni_w);
+        tj_t = inner_product(polymer[j].t, ti_old);
+        polymer[j].t = {(cos_theta * tj_t - sin_theta * tj_w) * ti_old[0] + (sin_theta * tj_t + cos_theta * tj_w) * uni_w[0] + tj_v * uni_v[0],
+                        (cos_theta * tj_t - sin_theta * tj_w) * ti_old[1] + (sin_theta * tj_t + cos_theta * tj_w) * uni_w[1] + tj_v * uni_v[1],
+                        (cos_theta * tj_t - sin_theta * tj_w) * ti_old[2] + (sin_theta * tj_t + cos_theta * tj_w) * uni_w[2] + tj_v * uni_v[2]};
+        // renormalize t
+        tj_norm = std::sqrt(polymer[j].t[0] * polymer[j].t[0] + polymer[j].t[1] * polymer[j].t[1] + polymer[j].t[2] * polymer[j].t[2]);
+        polymer[j].t[0] /= tj_norm;
+        polymer[j].t[1] /= tj_norm;
+        polymer[j].t[2] /= tj_norm;
+
+        /*
         // rorate r_ij towards uni_w by theta
         r_ij = {polymer[j].r[0] - polymer[bead_i].r[0], polymer[j].r[1] - polymer[bead_i].r[1], polymer[j].r[2] - polymer[bead_i].r[2]};
         r_ij_norm = std::sqrt(r_ij[0] * r_ij[0] + r_ij[1] * r_ij[1] + r_ij[2] * r_ij[2]);
@@ -236,7 +276,17 @@ int semiflexible_polymer::update_bead_tangent_rotation(int bead_i)
             std::cout << "Error: r_ij_norm changed" << std::endl;
             // return 0;
         }
+        */
     }
+
+    // reconstruct r
+    for (int k = bead_i + 1; k < polymer.size(); k++)
+    {
+        polymer[k].r = {polymer[k - 1].r[0] + polymer[k - 1].t[0],
+                        polymer[k - 1].r[1] + polymer[k - 1].t[1],
+                        polymer[k - 1].r[2] + polymer[k - 1].t[2]};
+    }
+    /*
 
     // update all t accodingly
     for (int j = bead_i; j < polymer.size() - 1; j++)
@@ -248,6 +298,7 @@ int semiflexible_polymer::update_bead_tangent_rotation(int bead_i)
             std::cout << "Error: t not normalized" << std::endl;
         }
     }
+    */
 
     // calculate updated energy
     new_Tb = (bead_i == 0) ? 0 : calc_bending_of_two_t(polymer[bead_i - 1].t, polymer[bead_i].t);
@@ -258,7 +309,7 @@ int semiflexible_polymer::update_bead_tangent_rotation(int bead_i)
         new_E += -Epar.g * polymer[j].r[2] * polymer[j].t[0];
     }
 
-    if (satisfy_self_avoiding_condition_by_group(bead_i) && rand_uni(gen) < std::exp(-beta * (new_E - old_E)))
+    if (satisfy_self_avoiding_condition_by_group(bead_i, L + 1) && rand_uni(gen) < std::exp(-beta * (new_E - old_E)))
     {
         E_sys += new_E - old_E;
         Tb_sys += new_Tb - old_Tb;
@@ -310,26 +361,61 @@ int semiflexible_polymer::satisfy_self_avoiding_condition(int bead_i)
     return 1;
 }
 
-int semiflexible_polymer::satisfy_self_avoiding_condition_by_group(int bead_i)
+int semiflexible_polymer::satisfy_self_avoiding_condition_by_group(int bead_i, int bead_j)
 {
     // check overlapping between j<bead_i and j>bead_i
-    if (bead_i == 0 || bead_i == L)
+    if (bead_i > bead_j)
     {
+        // swap, make sure i is before j
+        int bead = bead_i;
+        bead_i = bead_j;
+        bead_j = bead;
+    }
+    if (bead_j - bead_i < 2)
+    {
+        // nothing in between
         return 1;
     }
     double rjk_norm2 = 0;
-    for (int j = 0; j < bead_i; j++)
+
+    if (bead_j == L + 1)
     {
-        for (int k = bead_i + 1; k < polymer.size(); k++)
+        for (int j = 0; j < bead_i; j++)
         {
-            rjk_norm2 = 0;
-            for (int l = 0; l < 3; l++)
+            for (int k = bead_i + 1; k < polymer.size(); k++)
             {
-                rjk_norm2 += std::pow(polymer[j].r[l] - polymer[k].r[l], 2);
+                rjk_norm2 = 0;
+                for (int l = 0; l < 3; l++)
+                {
+                    rjk_norm2 += std::pow(polymer[j].r[l] - polymer[k].r[l], 2);
+                }
+                if (rjk_norm2 < 1)
+                {
+                    return 0;
+                }
             }
-            if (rjk_norm2 < 1)
+        }
+    }
+    else
+    {
+        for (int j = bead_i + 1; j < bead_j; j++)
+        {
+            for (int k = 0; k < polymer.size(); k++)
             {
-                return 0;
+                if (k > bead_i && k < bead_j)
+                {
+                    // within the group, no need to check
+                    continue;
+                }
+                rjk_norm2 = 0;
+                for (int l = 0; l < 3; l++)
+                {
+                    rjk_norm2 += (polymer[j].r[l] - polymer[k].r[l]) * (polymer[j].r[l] - polymer[k].r[l]);
+                }
+                if (rjk_norm2 < 1)
+                {
+                    return 0;
+                }
             }
         }
     }
@@ -365,13 +451,16 @@ void semiflexible_polymer::save_observable_to_file(std::string filename, std::ve
             f << "beta=" << beta << "\n";
             f << "f=" << Epar.f << "\n";
             f << "g=" << Epar.g << "\n";
-            f << "E(energy),Tb(total bending), X(end to end X distance),  Y(end to end Y distance), Z(end to end Z distance), R(end to end distance)";
+            f << "E(energy),Tb(total bending), X(end to end X distance), Y(end to end Y distance), Z(end to end Z distance), R(end to end distance)"
+              << "Rg(radius of gyration), Sxx(gyration tensor component), Syy, Szz, Sxy, Sxz, Syz ";
             for (int i = 0; i < number_of_polymer; i++)
             {
                 f << "\n"
                   << obs_ensemble[i].E << "," << obs_ensemble[i].Tb
                   << "," << obs_ensemble[i].X << "," << obs_ensemble[i].Y
-                  << "," << obs_ensemble[i].Z << "," << obs_ensemble[i].R;
+                  << "," << obs_ensemble[i].Z << "," << obs_ensemble[i].R << "," << obs_ensemble[i].Rg
+                  << "," << obs_ensemble[i].Sxx << "," << obs_ensemble[i].Syy << "," << obs_ensemble[i].Szz
+                  << "," << obs_ensemble[i].Sxy << "," << obs_ensemble[i].Sxz << "," << obs_ensemble[i].Syz;
             }
         }
         else
@@ -379,22 +468,19 @@ void semiflexible_polymer::save_observable_to_file(std::string filename, std::ve
             // only save stats
             // find stats
             // calculate average and standard deviation of E
-            double avg_E = 0.0;
-            double std_E = 0.0;
-            double avg_Tb = 0.0;
-            double std_Tb = 0.0;
-            double avg_X = 0.0;
-            double std_X = 0.0;
-            double avg_Y = 0.0;
-            double std_Y = 0.0;
-            double avg_Z = 0.0;
-            double std_Z = 0.0;
-            double avg_R = 0.0;
-            double std_R = 0.0;
+            double avg_E = 0.0, std_E = 0.0, avg_Tb = 0.0, std_Tb = 0.0;
+            double avg_X = 0.0, std_X = 0.0, avg_Y = 0.0, std_Y = 0.0, avg_Z = 0.0, std_Z = 0.0, avg_R = 0.0, std_R = 0.0;
+            double avg_Rg = 0.0, std_Rg = 0.0;
+            double avg_Sxx = 0.0, std_Sxx = 0.0, avg_Syy = 0.0, std_Syy = 0.0, avg_Szz = 0.0, std_Szz = 0.0;
+            double avg_Sxy = 0.0, std_Sxy = 0.0, avg_Sxz = 0.0, std_Sxz = 0.0, avg_Syz = 0.0, std_Syz = 0.0;
+
             std::vector<double> avg_Sq(obs_ensemble[0].Sq.size(), 0.0);
             std::vector<double> std_Sq(obs_ensemble[0].Sq.size(), 0.0);
             std::vector<double> avg_tts(obs_ensemble[0].tts.size(), 0.0);
             std::vector<double> std_tts(obs_ensemble[0].tts.size(), 0.0);
+
+            double M = obs_ensemble.size();
+            double sqrt_M = std::sqrt(M);
 
             // get the average
             for (int i = 0; i < obs_ensemble.size(); i++)
@@ -405,27 +491,46 @@ void semiflexible_polymer::save_observable_to_file(std::string filename, std::ve
                 avg_Y += obs_ensemble[i].Y;
                 avg_Z += obs_ensemble[i].Z;
                 avg_R += obs_ensemble[i].R;
+                avg_Rg += obs_ensemble[i].Rg;
+                avg_Sxx += obs_ensemble[i].Sxx;
+                avg_Syy += obs_ensemble[i].Syy;
+                avg_Szz += obs_ensemble[i].Szz;
+                avg_Sxy += obs_ensemble[i].Sxy;
+                avg_Sxz += obs_ensemble[i].Sxz;
+                avg_Syz += obs_ensemble[i].Syz;
                 for (int j = 0; j < obs_ensemble[i].Sq.size(); j++)
                 {
                     avg_Sq[j] += obs_ensemble[i].Sq[j];
                     avg_tts[j] += obs_ensemble[i].tts[j];
                 }
             }
-            avg_E /= obs_ensemble.size();
-            avg_Tb /= obs_ensemble.size();
-            avg_X /= obs_ensemble.size();
-            avg_Y /= obs_ensemble.size();
-            avg_Z /= obs_ensemble.size();
-            avg_R /= obs_ensemble.size();
+            avg_E /= M;
+            avg_Tb /= M;
+            avg_X /= M;
+            avg_Y /= M;
+            avg_Z /= M;
+            avg_R /= M;
+            avg_Rg /= M;
+            avg_Sxx /= M;
+            avg_Syy /= M;
+            avg_Szz /= M;
+            avg_Sxy /= M;
+            avg_Sxz /= M;
+            avg_Syz /= M;
+
+            if(obs_ensemble[0].Sq.size() != obs_ensemble[0].tts.size())
+            {
+                std::cout << "Error: Sq and tts size not match" << std::endl;
+                return;
+            }
 
             for (int j = 0; j < obs_ensemble[0].Sq.size(); j++)
             {
-                avg_Sq[j] /= obs_ensemble.size();
-                avg_tts[j] /= obs_ensemble.size();
+                avg_Sq[j] /= M;
+                avg_tts[j] /= M;
             }
 
             // get std
-
             for (int i = 0; i < obs_ensemble.size(); i++)
             {
                 std_E += (obs_ensemble[i].E - avg_E) * (obs_ensemble[i].E - avg_E);
@@ -434,6 +539,13 @@ void semiflexible_polymer::save_observable_to_file(std::string filename, std::ve
                 std_Y += (obs_ensemble[i].Y - avg_Y) * (obs_ensemble[i].Y - avg_Y);
                 std_Z += (obs_ensemble[i].Z - avg_Z) * (obs_ensemble[i].Z - avg_Z);
                 std_R += (obs_ensemble[i].R - avg_R) * (obs_ensemble[i].R - avg_R);
+                std_Rg += (obs_ensemble[i].Rg - avg_Rg) * (obs_ensemble[i].Rg - avg_Rg);
+                std_Sxx += (obs_ensemble[i].Sxx - avg_Sxx) * (obs_ensemble[i].Sxx - avg_Sxx);
+                std_Syy += (obs_ensemble[i].Syy - avg_Syy) * (obs_ensemble[i].Syy - avg_Syy);
+                std_Szz += (obs_ensemble[i].Szz - avg_Szz) * (obs_ensemble[i].Szz - avg_Szz);
+                std_Sxy += (obs_ensemble[i].Sxy - avg_Sxy) * (obs_ensemble[i].Sxy - avg_Sxy);
+                std_Sxz += (obs_ensemble[i].Sxz - avg_Sxz) * (obs_ensemble[i].Sxz - avg_Sxz);
+                std_Syz += (obs_ensemble[i].Syz - avg_Syz) * (obs_ensemble[i].Syz - avg_Syz);
 
                 for (int j = 0; j < obs_ensemble[i].Sq.size(); j++)
                 {
@@ -441,51 +553,62 @@ void semiflexible_polymer::save_observable_to_file(std::string filename, std::ve
                     std_tts[j] += (obs_ensemble[i].tts[j] - avg_tts[j]) * (obs_ensemble[i].tts[j] - avg_tts[j]);
                 }
             }
-            std_E = std::sqrt(std_E / obs_ensemble.size());
-            std_Tb = std::sqrt(std_Tb / obs_ensemble.size());
-            std_X = std::sqrt(std_X / obs_ensemble.size());
-            std_Y = std::sqrt(std_Y / obs_ensemble.size());
-            std_Z = std::sqrt(std_Z / obs_ensemble.size());
-            std_R = std::sqrt(std_R / obs_ensemble.size());
+            std_E = std::sqrt(std_E / M);
+            std_Tb = std::sqrt(std_Tb / M);
+            std_X = std::sqrt(std_X / M);
+            std_Y = std::sqrt(std_Y / M);
+            std_Z = std::sqrt(std_Z / M);
+            std_R = std::sqrt(std_R / M);
+            std_Rg = std::sqrt(std_Rg / M);
+            std_Sxx = std::sqrt(std_Sxx / M);
+            std_Syy = std::sqrt(std_Syy / M);
+            std_Szz = std::sqrt(std_Szz / M);
+            std_Sxy = std::sqrt(std_Sxy / M);
+            std_Sxz = std::sqrt(std_Sxz / M);
+            std_Syz = std::sqrt(std_Syz / M);
+
             for (int j = 0; j < obs_ensemble[0].Sq.size(); j++)
             {
-                std_Sq[j] = std::sqrt(std_Sq[j] / obs_ensemble.size());
-                std_tts[j] = std::sqrt(std_tts[j] / obs_ensemble.size());
+                std_Sq[j] = std::sqrt(std_Sq[j] / M);
+                std_tts[j] = std::sqrt(std_tts[j] / M);
             }
-
             // write parameters and stats to the file
-            f << "stats,L,kappa,f,g,E,Tb,X,Y,Z,R,Sq";
+            f << "stats,L,kappa,f,g,E,Tb,X,Y,Z,R,Rg,Sxx,Syy,Szz,Sxy,Sxz,Syz,Sq\n";
             f << "\nmean," << L << "," << Epar.kappa << "," << Epar.f << "," << Epar.g << "," << avg_E << "," << avg_Tb
-              << "," << avg_X << "," << avg_Y << "," << avg_Z << "," << avg_R;
+              << "," << avg_X << "," << avg_Y << "," << avg_Z << "," << avg_R << "," << avg_Rg << "," << avg_Sxx << "," << avg_Syy
+              << "," << avg_Szz << "," << avg_Sxy << "," << avg_Sxz << "," << avg_Syz;
             for (int j = 0; j < avg_Sq.size(); j++)
             {
                 f << "," << avg_Sq[j];
             }
-            f << "\nstd/sqrt(number of polymer),NA,NA,NA,NA," << std_E / std::sqrt(obs_ensemble.size()) << "," << std_Tb / std::sqrt(obs_ensemble.size())
-              << "," << std_X / std::sqrt(obs_ensemble.size()) << "," << std_Y / std::sqrt(obs_ensemble.size())
-              << "," << std_Z / std::sqrt(obs_ensemble.size()) << "," << std_R / std::sqrt(obs_ensemble.size());
+
+            f << "\nstd/sqrt(number of polymer),NA,NA,NA,NA," << std_E / sqrt_M << "," << std_Tb / sqrt_M
+              << "," << std_X / sqrt_M << "," << std_Y / sqrt_M
+              << "," << std_Z / sqrt_M << "," << std_R / sqrt_M << "," << std_Rg / sqrt_M
+              << "," << std_Sxx / sqrt_M << "," << std_Syy / sqrt_M << "," << std_Szz / sqrt_M
+              << "," << std_Sxy / sqrt_M << "," << std_Sxz / sqrt_M << "," << std_Syz / sqrt_M;
             for (int j = 0; j < std_Sq.size(); j++)
             {
-                f << "," << std_Sq[j] / std::sqrt(obs_ensemble.size());
+                f << "," << std_Sq[j] / sqrt_M;
             }
 
-            f << "\n qB,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA";
+            f << "\n qB,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA";
             for (int j = 0; j < obs_ensemble[0].qB.size(); j++)
             {
                 f << "," << obs_ensemble[0].qB[j];
             }
 
-            f << "\n tts,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA";
+            f << "\n tts,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA";
             for (int j = 0; j < avg_tts.size(); j++)
             {
                 f << "," << avg_tts[j];
             }
-            f << "\nstd_tts/sqrt(number of polymer),NA,NA,NA,NA,NA,NA,NA,NA,NA,NA";
+            f << "\nstd_tts/sqrt(number of polymer),NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA";
             for (int j = 0; j < std_tts.size(); j++)
             {
-                f << "," << std_tts[j] / std::sqrt(obs_ensemble.size());
+                f << "," << std_tts[j] / sqrt_M;
             }
-            f << "\n r(for tts),NA,NA,NA,NA,NA,NA,NA,NA,NA,NA";
+            f << "\n r(for tts),NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA";
             for (int j = 0; j < obs_ensemble[0].spB.size(); j++)
             {
                 f << "," << obs_ensemble[0].spB[j];
@@ -511,21 +634,33 @@ observable semiflexible_polymer::measure_observable(int bin_num)
     obs.X = R[0];
     obs.Y = R[1];
     obs.Z = R[2];
+    obs.Rg = calc_radius_of_gyration();
 
-    double qB_i = 1e-4; // 0.2*M_PI/L; //0.1/L; ;
+    std::vector<double> Sij = {0, 0, 0, 0, 0, 0};
+    Sij = calc_gyration_tensor();
+    obs.Sxx = Sij[0];
+    obs.Syy = Sij[1];
+    obs.Szz = Sij[2];
+    obs.Sxy = Sij[3];
+    obs.Sxz = Sij[4];
+    obs.Syz = Sij[5];
+
+    double qB_i = 1e-3; // 0.2*M_PI/L; //0.1/L; ;
     double qB_f = 1e0;  // M_PI;//100.0/L; //M_PI;
-    obs.qB = std::vector<double>(bin_num, 0);
+    obs.qB.resize(bin_num);
+    obs.Sq.resize(bin_num);
+    //= std::vector<double>(bin_num, 0);
     for (int k = 0; k < bin_num; k++)
     {
         obs.qB[k] = qB_i * std::pow(qB_f / qB_i, 1.0 * k / (bin_num - 1)); // uniform in log scale
     }
     obs.Sq = calc_structure_factor(obs.qB);
 
-
-    obs.spB = std::vector<double>(int(L/4), 0); // measure upto L/5 length
-    for (int k = 0; k < int(L/4); k++)
+    obs.spB.resize(bin_num);
+    obs.tts.resize(bin_num);
+    for (int k = 0; k < bin_num; k++)
     {
-        obs.spB[k] = k; // 0, 1, 2, ... bin_num-1
+        obs.spB[k] = k; // 0, 1, 2, ..
     }
     obs.tts = calc_tangent_pair_correlation(obs.spB);
 
@@ -535,7 +670,6 @@ observable semiflexible_polymer::measure_observable(int bin_num)
 std::vector<double> semiflexible_polymer::calc_structure_factor(std::vector<double> qB)
 {
     // measure structure factor
-    int bin;
     double q;
     int bin_num = qB.size();
 
@@ -566,23 +700,52 @@ std::vector<double> semiflexible_polymer::calc_structure_factor(std::vector<doub
 
 std::vector<double> semiflexible_polymer::calc_tangent_pair_correlation(std::vector<double> spB)
 {
-    int bin_num = spB.size();
-    std::vector<double> tts(bin_num, 0);
-    tts[0] = 1.0;                            // self correlation
-    std::vector<int> pair_count(bin_num, 0); // count number of t-t pair added to a s
+    int nbin = spB.size();
+    std::vector<double> tts(nbin, 0);
+    tts[0] = 1.0;                         // self correlation
+    std::vector<int> pair_count(nbin, 0); // count number of t-t pair added to a s
     for (int i = 0; i < L - 1; i++)
     {
         for (int j = i + 1; j < L; j++)
         {
+            if(j-i >= nbin)
+            {
+                continue;
+            }
             tts[j - i] += inner_product(polymer[i].t, polymer[j].t);
             pair_count[j - i]++;
         }
     }
-    for (int i = 1; i < bin_num; i++)
+    for (int i = 1; i < nbin; i++)
     {
         tts[i] /= pair_count[i];
     }
     return tts;
+}
+
+std::vector<double> semiflexible_polymer::calc_gyration_tensor()
+{
+    double Sxx = 0, Syy = 0, Szz = 0, Sxy = 0, Sxz = 0, Syz = 0;
+    int N = polymer.size();
+    for (int i = 0; i < polymer.size() - 1; i++)
+    {
+        for (int j = i; j < polymer.size(); j++)
+        {
+            Sxx += (polymer[i].r[0] - polymer[j].r[0]) * (polymer[i].r[0] - polymer[j].r[0]);
+            Syy += (polymer[i].r[1] - polymer[j].r[1]) * (polymer[i].r[1] - polymer[j].r[1]);
+            Szz += (polymer[i].r[2] - polymer[j].r[2]) * (polymer[i].r[2] - polymer[j].r[2]);
+            Sxy += (polymer[i].r[0] - polymer[j].r[0]) * (polymer[i].r[1] - polymer[j].r[1]);
+            Sxz += (polymer[i].r[0] - polymer[j].r[0]) * (polymer[i].r[2] - polymer[j].r[2]);
+            Syz += (polymer[i].r[1] - polymer[j].r[1]) * (polymer[i].r[2] - polymer[j].r[2]);
+        }
+    }
+    Sxx /= N * N;
+    Syy /= N * N;
+    Szz /= N * N;
+    Sxy /= N * N;
+    Sxz /= N * N;
+    Syz /= N * N;
+    return {Sxx, Syy, Szz, Sxy, Sxz, Syz};
 }
 
 double semiflexible_polymer::calc_radius_of_gyration()
@@ -591,7 +754,7 @@ double semiflexible_polymer::calc_radius_of_gyration()
     double Rg = 0;
     // find center of mass
     double x_c = 0, y_c = 0, z_c = 0;
-    for (int i = 0; i < L; i++)
+    for (int i = 0; i < polymer.size(); i++)
     {
         x_c = x_c + polymer[i].r[0];
         y_c = y_c + polymer[i].r[1];
@@ -602,11 +765,11 @@ double semiflexible_polymer::calc_radius_of_gyration()
     z_c = z_c / L;
 
     // calculate Rg
-    for (int i = 0; i < L; i++)
+    for (int i = 0; i < polymer.size(); i++)
     {
         Rg += std::pow(polymer[i].r[0] - x_c, 2) + std::pow(polymer[i].r[1] - y_c, 2) + std::pow(polymer[i].r[2] - z_c, 2);
     }
-    Rg = std::sqrt(Rg / L);
+    Rg = std::sqrt(Rg / polymer.size());
     return Rg;
 }
 
@@ -709,7 +872,7 @@ void semiflexible_polymer::run_simultion(int therm_sweep, int MC_sweeps, int ste
 
     double conrot_acceptance_rate = 0;
     double tanrot_acceptance_rate = 0;
-    int bead_i;
+    int bead_i, bead_j, bead_ij;
 
     beta = 0; // randomization
     for (int i = 0; i < therm_sweep; i++)
@@ -717,11 +880,15 @@ void semiflexible_polymer::run_simultion(int therm_sweep, int MC_sweeps, int ste
         std::cout << "randomization(beta=0) sweep " << i << " out of " << therm_sweep << " (" << (i * 100) / therm_sweep << "%)\r";
         for (int j = 0; j < step_per_sweep; j++)
         {
-            bead_i = 1 + int(rand_uni(gen) * (L - 2));
-            update_bead_concerted_rotation(bead_i);
+            bead_ij = 2 + int(rand_uni(gen) * (L - 1)); //~[2,L]
+            bead_ij = 2;
+            bead_i = int(rand_uni(gen) * (L - bead_ij)); // take between [0,L-bead_ij]
+            bead_j = bead_i + bead_ij;
+            update_bead_concerted_rotation(bead_i, bead_j);
+
+            bead_i = int(rand_uni(gen) * L);
+            update_bead_tangent_rotation(bead_i);
         }
-        bead_i = int(rand_uni(gen) * L);
-        update_bead_tangent_rotation(bead_i);
     }
 
     std::cout << "\n";
@@ -730,13 +897,17 @@ void semiflexible_polymer::run_simultion(int therm_sweep, int MC_sweeps, int ste
     {
         beta = (i + 1) * 1.0 / therm_sweep; // tempering
         std::cout << "thermalization/tempering (beta -> 1) sweep " << i << " out of " << therm_sweep << " (" << (i * 100) / therm_sweep << "%)\r";
+
         for (int j = 0; j < step_per_sweep; j++)
         {
-            bead_i = 1 + int(rand_uni(gen) * (L - 2));
-            update_bead_concerted_rotation(bead_i);
+            bead_ij = 2 + int(rand_uni(gen) * (L - 1));  //~[2,L]
+            bead_i = int(rand_uni(gen) * (L - bead_ij)); // take between [0,L-bead_ij]
+            bead_j = bead_i + bead_ij;
+            update_bead_concerted_rotation(bead_i, bead_j);
+
+            bead_i = int(rand_uni(gen) * L); // take between [0,L-1]
+            update_bead_tangent_rotation(bead_i);
         }
-        bead_i = int(rand_uni(gen) * L);
-        update_bead_tangent_rotation(bead_i);
     }
 
     // data collection run
@@ -745,34 +916,30 @@ void semiflexible_polymer::run_simultion(int therm_sweep, int MC_sweeps, int ste
     if (beta != 1)
     {
         std::cout << "Error: beta is not 1 at the end of thermalization\n";
+        beta = 1;
     }
     for (int i = 0; i < MC_sweeps; i++)
     {
         std::cout << "MC sweep " << i << " out of " << MC_sweeps << " (" << (i * 100) / MC_sweeps << "%)\r";
         for (int j = 0; j < step_per_sweep; j++)
         {
-            bead_i = 1 + int(rand_uni(gen) * (L - 2));
-            if (fix_bead_0 && bead_i == 0)
-            {
-                std::cout << "Error: bead_i is 0 when fixed_bead_0" << std::endl;
-            }
-            if (bead_i == L + 1)
-            {
-                std::cout << "bead_i == L + 1????" << std::endl;
-            }
-            // std::cout<<"bead_i:"<<bead_i<<std::endl;
-            // if(bead_i == L){
-            // std::cout<<"updating the end"<<std::endl;
-            //}
-            conrot_acceptance_rate += update_bead_concerted_rotation(bead_i);
+            // bead_ij = 2 + int(rand_uni(gen) * (L / 5 - 1)); //~[2,L/3]
+            bead_ij = 2 + int(rand_uni(gen) * Epar.kappa);    // segment size propotional to persistence length
+            bead_i = int(rand_uni(gen) * (L - bead_ij)); // take between [0,L-bead_ij]
+            bead_j = bead_i + bead_ij;
+            // std::cout<<"\nbead_i="<<bead_i<<", bead_j="<<bead_j<<std::endl;
+            conrot_acceptance_rate += update_bead_concerted_rotation(bead_i, bead_j);
+
+
+            bead_i = int(rand_uni(gen) * L); // take between [0,L-1]
+            tanrot_acceptance_rate += update_bead_tangent_rotation(bead_i);
         }
-        bead_i = int(rand_uni(gen) * L);
-        tanrot_acceptance_rate += update_bead_tangent_rotation(bead_i);
-        obs_ensemble.push_back(measure_observable(bin_num));
+        observable obs = measure_observable(bin_num);
+        obs_ensemble.push_back(obs);
     }
     std::cout << "\n";
     std::cout << "conrot_acceptance rate:" << conrot_acceptance_rate / MC_sweeps / step_per_sweep << std::endl;
-    std::cout << "tanrot_acceptance rate:" << tanrot_acceptance_rate / MC_sweeps << std::endl;
+    std::cout << "tanrot_acceptance rate:" << tanrot_acceptance_rate / MC_sweeps / step_per_sweep << std::endl;
 
     save_polymer_to_file(folder + "/config_" + finfo + ".csv");
     save_observable_to_file(folder + "/obs_MC_" + finfo + ".csv", obs_ensemble, true);
