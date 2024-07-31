@@ -26,6 +26,7 @@ struct observable
     double Y;                            // end to end Y distance  |(r(L-1) + t(L-1) - r(0)).y|
     double Z;                            // end to end Z distance  |(r(L-1) + t(L-1) - r(0)).z|
     double R;                            // end to end distance  |r(L-1) + t(L-1) - r(0)|
+    double R2;                           // end to end distance square
     double Rg;                           // radius of gyration
     double Sxx, Syy, Szz, Sxy, Sxz, Syz; // gyration tensor components
 

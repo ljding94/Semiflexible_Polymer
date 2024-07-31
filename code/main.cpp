@@ -27,14 +27,14 @@ int main(int argc, char const *argv[])
         int L = std::atoi(argv[1]);
         Epar.kappa = std::atof(argv[2]);
         Epar.f = std::atof(argv[3]);
-        Epar.g = std::atof(argv[4]);
+        Epar.g = std::atof(argv[4])*1.0/L;
         double d_theta = M_PI*2.0/3/(1.0+std::sqrt(Epar.kappa));
         std::cout<<"d_theta: "<<d_theta<<std::endl;
 
 
         semiflexible_polymer polymer(L, Epar, d_theta);
         std::string finfo = "L" + std::string(argv[1]) + "_kappa" + std::string(argv[2])
-                          + "_f" + std::string(argv[3]) + "_g" + std::string(argv[4]);
+                          + "_f" + std::string(argv[3]) + "_gL" + std::string(argv[4]);
 
         int bin_num;
         int therm_sweeps;
