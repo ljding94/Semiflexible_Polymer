@@ -3,24 +3,28 @@ import numpy as np
 import matplotlib.patches as mpatches
 
 
-def ax_plot_config(ax, start, filename, color="gray"):
+def ax_plot_config(ax, folder, param, zlim_shift,label):
+    L, kappa, f, gL = param
+    finfo = f"L{L}_kappa{kappa:.1f}_f{f:.2f}_gL{gL:.2f}"
+    filename = f"{folder}/config_{finfo}.csv"
     data = np.genfromtxt(filename, delimiter=',', skip_header=1)
-    x, y, z = data[start:, 0], data[start:, 1], data[start:, 2]
+    x, y, z = data[:, 0], data[:, 1], data[:, 2]
     # tx, ty, tz = data[:, 3], data[:, 4], data[:, 5]
-    # ax.plot(x, y, z, "-o", color="gray", mfc="black", mec="black")
-    ax.plot(x, y, z, "-o", color=color, mfc="gray", ms=3)
+    ax.plot(x, y, z, "-", lw=2, label=label)
+    #y_min = np.min(y)
+    #y_max = np.max(y)
 
-    ax.set_xlim(np.min(x)-1, np.max(x)+1)
+    #for i in range(len(x)-1):
+        #alpha_xz = 0.8*(y[i]-y_min+0.01)/(y_max-y_min+0.01)+0.1
+        #ax.plot([x[i], x[i+1]], [z[i], z[i+1]], "-", alpha=alpha_xz, color=color, lw=1, label=label)
+
+    #ax.set_xlim(np.min(x)-1, np.max(x)+1)
     ax.set_ylim(np.min(y)-1, np.max(y)+1)
-    ax.set_zlim(np.min(z)-1, np.max(z)+1)
-
-    # ax.set_ylim(-ymax-1, ymax+1)
-    # ax.set_zlim(-zmax-1, zmax+1)
-
-    ax.legend()
-    ax.set_xlabel('X')
-    ax.set_ylabel('Y')
-    ax.set_zlabel('Z')
+    ax.set_zlim(np.min(z)-1+zlim_shift, np.max(z)+1)
+    ax.set_xlabel(r"$x$")
+    ax.set_ylabel(r"$y$")
+    ax.set_zlabel(r"$z$")
+    ax.set_aspect("equal")
 
 
 def ax_plot_config_xz(ax, filename, color="black"):
@@ -120,8 +124,8 @@ def ax_plot_tan_rot_update(ax, yshift=-4):
 def plot_config_update_demo(tex_lw=240.71031, ppi=72):
 
     fig = plt.figure(figsize=(tex_lw / ppi * 1, tex_lw / ppi * 0.9))
-    # plt.rc("text", usetex=True)
-    # plt.rc("text.latex", preamble=r"\usepackage{physics}")
+    plt.rc("text", usetex=True)
+    plt.rc("text.latex", preamble=r"\usepackage{physics}")
     # for outofplane twist (2D CANAL)
     ax = fig.add_subplot(111)  # , projection='3d')
     # ax2 = fig.add_subplot(212)  # , projection='3d')
@@ -151,5 +155,3 @@ def plot_config_update_demo(tex_lw=240.71031, ppi=72):
     # plt.show()
     plt.savefig("figures/config_update_demo.pdf", format="pdf")
     plt.close()
-
-

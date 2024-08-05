@@ -27,7 +27,7 @@ struct observable
     double Z;                            // end to end Z distance  |(r(L-1) + t(L-1) - r(0)).z|
     double R;                            // end to end distance  |r(L-1) + t(L-1) - r(0)|
     double R2;                           // end to end distance square
-    double Rg;                           // radius of gyration
+    double Rg2;                           // radius of gyration
     double Sxx, Syy, Szz, Sxy, Sxz, Syz; // gyration tensor components
 
     std::vector<double> Sq{};  // structure factor
@@ -73,7 +73,7 @@ public:
 
     // check self-avoid condition
     int satisfy_self_avoiding_condition(int bead_i);                      // check if polymer[i] satisfy self-avoiding condition with all other beads
-    int satisfy_self_avoiding_condition_by_group(int bead_i, int bead_j); // TODO: upgrade this to bead_i to bead_j
+    int satisfy_self_avoiding_condition_by_group(int bead_i, int bead_j); //
     // check if polymer[:i] and polymer[i:] satisfy self-avoiding condition with all other beads
 
     // some observable measurement
@@ -83,7 +83,7 @@ public:
     std::vector<double> calc_rod_structure_factor(std::vector<double> qB);      // calculate the structure factor of a rod
     std::vector<double> calc_tangent_pair_correlation(std::vector<double> spB); // calculate the pair tangent correlation distribution function
     std::vector<double> calc_gyration_tensor();                                 // calculate the gyration tensor
-    double calc_radius_of_gyration();                                           // radius of gyration
+    double calc_radius_of_gyration_square();                                           // radius of gyration Rg^2
 
     // experiment
     void save_polymer_to_file(std::string filename);

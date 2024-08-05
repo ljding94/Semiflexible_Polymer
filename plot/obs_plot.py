@@ -3,34 +3,43 @@ import numpy as np
 import matplotlib.patches as mpatches
 from scipy.optimize import curve_fit
 from matplotlib import rc
+from config_plot import *
 
 
 def get_obs_data(folder, param):
-    Rs, Rgs, R_errs, Rg_errs = [], [], [], []
-    for L, kappa, f, g in param:
-        finfo = f"L{L}_kappa{kappa:.1f}_f{f:.2f}_g{g:.2f}"
+    R2s, Rgs, R2_errs, Rg_errs = [], [], [], []
+    Rxxs, Rxzs, Rxx_errs, Rxz_errs = [], [], [], []
+    for L, kappa, f, gL in param:
+        finfo = f"L{L}_kappa{kappa:.1f}_f{f:.2f}_gL{gL:.2f}"
         filename = f"{folder}/obs_{finfo}.csv"
         data = np.genfromtxt(filename, delimiter=',', skip_header=1)
-        R, Rg = data[0, 10], data[0, 11]
-        R_err, Rg_err = data[1, 10], data[1, 11]
-        Rs.append(R)
+        R2, Rg, Rxx, Rxz = data[0, 11], data[0, 12], data[0, 13], data[0, 17]
+        R2_err, Rg_err, Rxx_err, Rxz_err = data[1, 11], data[1, 12], data[1, 13], data[1, 17]
+
+        R2s.append(R2)
         Rgs.append(Rg)
-        R_errs.append(R_err)
+        R2_errs.append(R2_err)
         Rg_errs.append(Rg_err)
-    return np.array(Rs), np.array(Rgs), np.array(R_errs), np.array(Rg_errs)
+
+        Rxxs.append(np.sqrt(Rxx))
+        Rxzs.append(np.sqrt(Rxz))
+        Rxx_errs.append(Rxx_err)
+        Rxz_errs.append(Rxz_err)
+
+    return np.array(R2s), np.array(Rgs), np.array(Rxxs), np.array(Rxzs)
 
 
 def get_tts_data(folder, param):
     tts = []
     tts_err = []
     spBs = []
-    for L, kappa, f, g in param:
-        finfo = f"L{L}_kappa{kappa:.1f}_f{f:.2f}_g{g:.2f}"
+    for L, kappa, f, gL in param:
+        finfo = f"L{L}_kappa{kappa:.1f}_f{f:.2f}_gL{gL:.2f}"
         filename = f"{folder}/obs_{finfo}.csv"
         data = np.genfromtxt(filename, delimiter=',', skip_header=1)
-        tt = data[3, 18:]
-        tt_err = data[4, 18:]
-        spB = data[5, 18:]
+        tt = data[3, 19:]
+        tt_err = data[4, 19:]
+        spB = data[5, 19:]
         tts.append(tt)
         tts_err.append(tt_err)
         spBs.append(spB)
@@ -66,13 +75,13 @@ def get_lp_data(folder, param, fitn=5):
 def plot_obs_kappa(tex_lw=240.71031, ppi=72):
 
     fig = plt.figure(figsize=(tex_lw / ppi * 1, tex_lw / ppi * 0.9))
-    # plt.rc("text", usetex=True)
-    # plt.rc("text.latex", preamble=r"\usepackage{physics}")
+    plt.rc("text", usetex=True)
+    plt.rc("text.latex", preamble=r"\usepackage{physics}")
 
     ax11 = fig.add_subplot(221)
-    ax21 = fig.add_subplot(223)
+    ax21 = fig.add_subplot(222)
 
-    ax12 = fig.add_subplot(222)
+    ax12 = fig.add_subplot(223)
     ax22 = fig.add_subplot(224)
 
     # plot tts vs. kappa
@@ -86,58 +95,69 @@ def plot_obs_kappa(tex_lw=240.71031, ppi=72):
     markers = ["o", "x", "s", "+", "d"]
     pltn = 10
     for i in range(len(kappas)):
-        ax11.semilogy(spBs[i][:pltn], tts[i][:pltn], marker=markers[i], ms=ms, mfc="None", ls="None", label=fr"${kappas[i]}$")
+        ax11.semilogy(spBs[i][:pltn], tts[i][:pltn], marker=markers[i], ms=ms, mfc="None", ls="None", lw=1, label=fr"${kappas[i]:.0f}$")
     ax11.set_ylabel(r"$\left<\cos{\theta}(s)\right>$", fontsize=9, labelpad=labelpad)
-    ax11.set_xlabel(r"$s/l_b$", fontsize=9, labelpad=labelpad)
+    ax11.set_xlabel(r"$s$", fontsize=9, labelpad=labelpad)
     ax11.tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=True, labelsize=7)
-    ax11.legend(title=r"$\kappa$", ncol=2, columnspacing=0.5, handlelength=0.5, handletextpad=0.1, frameon=False, fontsize=9)
-    ax11.set_ylim(2e-2, 1)
+    ax11.legend(title=r"$\kappa$", ncol=2, columnspacing=0.5, handlelength=0.5, handletextpad=0.2, frameon=False, fontsize=9)
+    ax11.set_ylim(2e-2, 1.2)
     ax11.xaxis.set_major_locator(plt.MultipleLocator(2))
     ax11.xaxis.set_minor_locator(plt.MultipleLocator(1))
     # ax.yaxis.set_major_locator(plt.MultipleLocator(20))
     # ax.yaxis.set_minor_locator(plt.MultipleLocator(10))
 
-    kappas = np.arange(0.0, 20.01, 1.0)
+    kappas = np.arange(2.0, 20.01, 2.0)
     L = 100
     param = [(L, kappa, 0.0, 0.0) for kappa in kappas]
     lps, lp_thetas = get_lp_data(folder, param)
-    ax21.plot(kappas, lps, marker="x", ms=ms, mfc="None", ls="none", label=r"$l_p$")
-    ax21.plot(kappas, lp_thetas, marker="+", ms=ms, mfc="None", ls="none", label=r"$l_{p,\theta}$")
-    ax21.plot(kappas, kappas, marker="none", ms=ms, mfc="None", ls="-", lw=1, color="gray")
-    ax21.legend(ncol=1, columnspacing=0.5, handlelength=0.5, handletextpad=0.1, frameon=False, fontsize=9)
-    ax21.set_ylabel(r"$l_p/l_b$", fontsize=9, labelpad=labelpad)
-    ax21.set_xlabel(r"$\kappa/(k_B T)$", fontsize=9, labelpad=labelpad)
+    ax21.plot(kappas, lps, marker="x", ms=ms, mfc="None", ls="none", lw=1, label=r"$l_p$")
+    ax21.plot(kappas, lp_thetas, marker="+", ms=ms, mfc="None", ls="none", lw=1, label=r"$l_{p,\theta}$")
+    ax21.plot(kappas, kappas, marker="none", ms=ms, mfc="None", ls="-", lw=1, color="gray", label="theory")
+    ax21.legend(ncol=2, columnspacing=0.5, handlelength=0.5, handletextpad=0.2, frameon=False, fontsize=9)
+    ax21.set_ylabel(r"$l_p,l_{p,\theta}$", fontsize=9, labelpad=labelpad)
+    ax21.set_xlabel(r"$\kappa$", fontsize=9, labelpad=labelpad)
     ax21.tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=True, labelsize=7)
     ax21.xaxis.set_major_locator(plt.MultipleLocator(4))
     ax21.xaxis.set_minor_locator(plt.MultipleLocator(2))
     ax21.yaxis.set_major_locator(plt.MultipleLocator(4))
     ax21.yaxis.set_minor_locator(plt.MultipleLocator(2))
 
-    # plot R and Rg vs. kappa
-    kappas = np.arange(0.0, 20.01, 1.0)
+    # plot R2 and Rg vs. kappa
+    kappas = np.arange(2.0, 20.01, 2.0)
     L = 100
     param = [(L, kappa, 0.0, 0.0) for kappa in kappas]
-    Rs, Rgs, R_errs, Rg_errs = get_obs_data(folder, param)
-    ax12.errorbar(kappas, np.array(Rs), yerr=np.array(R_errs), ls="-", ms=ms, mfc="None")
+    R2s, Rgs, Rxxs, Rxzs = get_obs_data(folder, param)
+    # ax12.errorbar(kappas, np.array(R2s)/L, yerr=np.array(R2_errs)/L, marker="s", ls="none", ms=ms, mfc="None")
+    ax12.plot(kappas, np.array(R2s)/L, marker="s", ls="none", ms=ms, mfc="None")
     lps = np.array(lps)
+    t = np.exp(-1/kappas)
+    R2_pL_theo = (1+t)/(1-t) + 2*t/L * (np.power(t, L)-1)/(1-t)**2
+    ax12.plot(kappas, R2_pL_theo, marker="none", ms=ms, mfc="None", ls="-", lw=1, color="gray", label="theory")
     # ax12.plot(kappas, 2*lps*(1-lps/L*(1-np.exp(-L/lps))), marker="none", ms=ms, mfc="None", ls="-", lw=1, color="gray", label=r"$2l_p(1-\frac{l_p}{L}(1-e^{-L/l_p}))$")
     # above equation is for R^2
-    ax12.set_ylabel(r"$R/l_b$", fontsize=9, labelpad=labelpad)
-    ax12.set_xlabel(r"$\kappa/(k_B T)$", fontsize=9, labelpad=labelpad)
+    ax12.set_ylabel(r"$R^2/L$", fontsize=9, labelpad=labelpad)
+    ax12.set_xlabel(r"$\kappa$", fontsize=9, labelpad=labelpad)
+    ax12.legend(ncol=1, columnspacing=0.5, handlelength=0.5, handletextpad=0.2, frameon=False, fontsize=9)
     ax12.tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=True, labelsize=7)
     ax12.xaxis.set_major_locator(plt.MultipleLocator(4))
     ax12.xaxis.set_minor_locator(plt.MultipleLocator(2))
     ax22.yaxis.set_major_locator(plt.MultipleLocator(10))
     ax22.yaxis.set_minor_locator(plt.MultipleLocator(5))
 
-    ax22.errorbar(kappas, Rgs, yerr=Rg_errs, ls="-", ms=ms, mfc="None")
-    ax22.set_ylabel(r"$R_g/l_b$", fontsize=9, labelpad=labelpad)
-    ax22.set_xlabel(r"$\kappa/(k_B T)$", fontsize=9, labelpad=labelpad)
+    # ax22.errorbar(kappas, Rgs, yerr=Rg_errs, ls="none", marker="v", ms=ms, mfc="None")
+    ax22.plot(kappas, Rgs, ls="none", marker="v", ms=ms, mfc="None")
+    ax22.set_ylabel(r"$R_g$", fontsize=9, labelpad=labelpad)
+    ax22.set_xlabel(r"$\kappa$", fontsize=9, labelpad=labelpad)
     ax22.tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=True, labelsize=7)
     ax22.xaxis.set_major_locator(plt.MultipleLocator(4))
     ax22.xaxis.set_minor_locator(plt.MultipleLocator(2))
     ax22.yaxis.set_major_locator(plt.MultipleLocator(4))
     ax22.yaxis.set_minor_locator(plt.MultipleLocator(2))
+
+    # add a,b,c,d,e,f,g,h
+    annotation = [r"$(a)$", r"$(b)$", r"$(c)$", r"$(d)$"]
+    for ax in [ax11, ax21, ax12, ax22]:
+        ax.text(0.8, 0.1, annotation.pop(0), fontsize=9, transform=ax.transAxes)
 
     plt.tight_layout(pad=0.05)
     plt.savefig("./figures/obs_kappa.pdf", format="pdf")
@@ -146,139 +166,200 @@ def plot_obs_kappa(tex_lw=240.71031, ppi=72):
 
 
 def plot_obs_f_g(tex_lw=240.71031, ppi=72):
-    fig = plt.figure(figsize=(tex_lw / ppi * 1, tex_lw / ppi * 1.2))
-    # plt.rc("text", usetex=True)
-    # plt.rc("text.latex", preamble=r"\usepackage{physics}")
+    # TODO add config and make it double column
 
-    ax11 = fig.add_subplot(321)
-    ax21 = fig.add_subplot(323, sharex=ax11)
-    ax31 = fig.add_subplot(325, sharex=ax11)
+    fig = plt.figure(figsize=(tex_lw / ppi * 2, tex_lw / ppi * 0.9))
+    plt.rc("text", usetex=True)
+    plt.rc("text.latex", preamble=r"\usepackage{physics}")
 
-    ax12 = fig.add_subplot(322)
-    ax22 = fig.add_subplot(324, sharex=ax12)
-    ax32 = fig.add_subplot(326, sharex=ax12)
+    ax11 = fig.add_subplot(241, projection="3d")
+    ax12 = fig.add_subplot(242)
+    ax13 = fig.add_subplot(243, sharex=ax12)
+    ax14 = fig.add_subplot(244, sharex=ax12)
 
-    ms = 4
-    labelpad = -0.75
+    ax21 = fig.add_subplot(245, projection="3d")
+    ax22 = fig.add_subplot(246)
+    ax23 = fig.add_subplot(247, sharex=ax22)
+    ax24 = fig.add_subplot(248, sharex=ax22)
+
+    ax11_2d = fig.add_subplot(241)
+    ax11_2d.set_axis_off()
+    ax21_2d = fig.add_subplot(245)
+    ax21_2d.set_axis_off()
+
+    ms = 3.5
+    labelpad = 0.1
     # plot lp vs f
     folder = "../data/20240730"
     L = 100
 
+    # plot config for f
+
+    for f in [0.04, 0.12, 0.20, 0.28]:
+        ax_plot_config(ax11, folder, [L, 10.0, f, 0.00], -10, fr"${f:.2f}$")
+    ax11.view_init(elev=32., azim=-75)
+    ax11.quiver(40, 5, 5, 20, 0, 0, color="black", arrow_length_ratio=0.4)
+    ax11.text(60, 5, 5, r"$\vu{x}$", fontsize=9)
+    ax11.legend(title=r"$f$", loc="lower center", ncol=2, columnspacing=0.5, handlelength=0.5, handletextpad=0.2, frameon=False, fontsize=9)
+    ax11.set_axis_off()
+
     kappas = [5.0, 10.0]
     lss = ['-', "--"]
+    markers = ["s", "o", "v"]
     color = ["tomato", "royalblue"]
     for i in range(len(kappas)):
         kappa = kappas[i]
         ls = lss[i]
-        fs = np.arange(0.00, 0.401, 0.02)
+        marker = markers[i]
+        fs = np.arange(0.00, 0.301, 0.02)
         param = [(L, kappa, f, 0.0) for f in fs]
         lps, lp_thetas = get_lp_data(folder, param)
         if i == 0:
-            ax11.plot(fs, lps, color="tomato", ls=ls, label=fr"$l_p$")
-            ax11.plot(fs, lp_thetas, color="royalblue", ls=ls, label=r"$l_{p,\theta}$")
+            ax12.plot(fs, lps, color="tomato", ls="none", marker=marker, ms=ms, mfc="None", label=r"$l_p$")
+            ax12.plot(fs, lp_thetas, color="royalblue", ls="none", marker=marker, ms=ms, mfc="None", label=r"$l_{p,\theta}$")
         else:
-            ax11.plot(fs, lps, color="tomato", ls=ls)
-            ax11.plot(fs, lp_thetas, color="royalblue", ls=ls)
-        ax11.text(0, kappa-1.5, fr"$\kappa/(k_B T)={kappa}$", fontsize=9)
+            ax12.plot(fs, lps, color="tomato", ls="none", marker=marker, ms=ms, mfc="None")
+            ax12.plot(fs, lp_thetas, color="royalblue", ls="none", marker=marker, ms=ms, mfc="None")
+        ax12.text(0, kappa-1.7, fr"$\kappa={kappa:.0f}$", fontsize=9)
 
-    ax11.legend(ncol=2, columnspacing=0.5, handlelength=0.5, handletextpad=0.1, frameon=False, fontsize=9)
-    ax11.set_ylabel(r"$l_p/l_b$", fontsize=9, labelpad=labelpad)
-    # ax11.set_xlabel(r"$fl_b/(k_B T)$", fontsize=9, labelpad=labelpad)
-    ax11.tick_params(which="both", direction="in", top="on", right="on", labelbottom=False, labelleft=True, labelsize=7)
+    ax12.legend(ncol=2, columnspacing=0.5, handlelength=0.5, handletextpad=0.2, frameon=False, fontsize=9)
+    ax12.set_ylabel(r"$l_p,l_{p,\theta}$", fontsize=9, labelpad=labelpad)
+    ax12.set_xlabel(r"$f$", fontsize=9, labelpad=labelpad)
+    ax12.tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=True, labelsize=7)
 
-    # ax11.xaxis.set_major_locator(plt.MultipleLocator(0.2))
-    # ax11.xaxis.set_minor_locator(plt.MultipleLocator(0.1))
-    ax11.yaxis.set_major_locator(plt.MultipleLocator(4))
-    ax11.yaxis.set_minor_locator(plt.MultipleLocator(2))
-    ax11.set_ylim(2, 13)
+    ax12.xaxis.set_major_locator(plt.MultipleLocator(0.2))
+    ax12.xaxis.set_minor_locator(plt.MultipleLocator(0.1))
+    ax12.yaxis.set_major_locator(plt.MultipleLocator(2))
+    ax12.yaxis.set_minor_locator(plt.MultipleLocator(1))
+    ax12.set_ylim(2, 13)
 
-    # plot R and Rg vs. f
+    # plot R2 and Rg vs. f
     for i in range(len(kappas)):
         kappa = kappas[i]
         ls = lss[i]
-        fs = np.arange(0.00, 0.401, 0.02)
+        marker = markers[i]
+        ls = "None"
+        fs = np.arange(0.00, 0.301, 0.02)
         param = [(L, kappa, f, 0.0) for f in fs]
-        R, Rg, R_err, Rg_err = get_obs_data(folder, param)
-        ax21.errorbar(fs, R, yerr=R_err, ls=ls, label=fr"${kappa}$")
-        ax31.errorbar(fs, Rg, yerr=Rg_err, ls=ls, label=fr"${kappa}$")
+        R2, Rg, Rxx, Rxz = get_obs_data(folder, param)
+        # ax21.errorbar(fs, R2/L, yerr=R2_err/L, ls=ls, marker=marker, ms=ms, mfc="None", label=fr"${kappa:.0f}$")
+        ax13.plot(fs, R2/L, ls=ls, marker=marker, ms=ms, mfc="None", label=fr"${kappa:.0f}$")
+        # ax31.errorbar(fs, Rg, yerr=Rg_err, ls=ls, marker=marker, ms=ms, mfc="None", label=fr"${kappa:.0f}$")
+        if kappa == 10:
+            ax14.plot(fs, Rg, ls=ls, marker=marker, ms=ms, mfc="None", label=r"$R_g$")
+            ax14.plot(fs, Rxx, ls=ls, marker=marker, ms=ms, mfc="None", label=r"$R_{xx}$")
+            #ax14.plot(fs, Rxz, ls=ls, marker=marker, ms=ms, mfc="None", label=r"$R_{xz}$")
 
-    ax21.legend(title=r"$\kappa/(k_B T)$", ncol=1, columnspacing=0.5, handlelength=0.5, handletextpad=0.1, frameon=False, fontsize=9)
-    ax21.set_ylabel(r"$R/l_b$", fontsize=9, labelpad=labelpad)
-    # ax21.set_xlabel(r"$fl_b/(k_B T)$", fontsize=9, labelpad=labelpad)
-    ax21.tick_params(which="both", direction="in", top="on", right="on", labelbottom=False, labelleft=True, labelsize=7)
-    # ax21.xaxis.set_major_locator(plt.MultipleLocator(0.2))
-    # ax21.xaxis.set_minor_locator(plt.MultipleLocator(0.1))
-    ax21.yaxis.set_major_locator(plt.MultipleLocator(10))
-    ax21.yaxis.set_minor_locator(plt.MultipleLocator(5))
+    ax13.legend(title=r"$\kappa$", ncol=1, columnspacing=0.5, handlelength=0.5, handletextpad=0.2, frameon=False, fontsize=9)
+    ax13.set_ylabel(r"$R^2/L$", fontsize=9, labelpad=labelpad)
+    ax13.set_xlabel(r"$f$", fontsize=9, labelpad=labelpad)
+    ax13.tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=True, labelsize=7)
+    # ax13.xaxis.set_major_locator(plt.MultipleLocator(0.2))
+    # ax13.xaxis.set_minor_locator(plt.MultipleLocator(0.1))
+    ax13.yaxis.set_major_locator(plt.MultipleLocator(10))
+    ax13.yaxis.set_minor_locator(plt.MultipleLocator(5))
 
-    ax31.legend(title=r"$\kappa/(k_B T)$", ncol=1, columnspacing=0.5, handlelength=0.5, handletextpad=0.1, frameon=False, fontsize=9)
-    ax31.set_ylabel(r"$R_g/l_b$", fontsize=9, labelpad=labelpad)
-    ax31.set_xlabel(r"$fl_b/(k_B T)$", fontsize=9, labelpad=labelpad)
-    ax31.tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=True, labelsize=7)
-    ax31.xaxis.set_major_locator(plt.MultipleLocator(0.1))
-    ax31.xaxis.set_minor_locator(plt.MultipleLocator(0.05))
-    ax31.yaxis.set_major_locator(plt.MultipleLocator(4))
-    ax31.yaxis.set_minor_locator(plt.MultipleLocator(2))
+    ax14.legend(title=r"$\kappa=10$", loc="center right", ncol=2, columnspacing=0.5, handlelength=0.5, handletextpad=0.2, frameon=False, fontsize=9)
+    ax14.set_ylabel(r"$R_g, R_{xx}$", fontsize=9, labelpad=labelpad)
+    ax14.set_xlabel(r"$f$", fontsize=9, labelpad=labelpad)
+    ax14.tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=True, labelsize=7)
+
+    ax14.xaxis.set_major_locator(plt.MultipleLocator(0.1))
+    ax14.xaxis.set_minor_locator(plt.MultipleLocator(0.05))
+    ax14.yaxis.set_major_locator(plt.MultipleLocator(4))
+    ax14.yaxis.set_minor_locator(plt.MultipleLocator(2))
+
+    # plot config vs g
+    for gL in [0.40, 0.80, 1.20]:
+        ax_plot_config(ax21, folder, [L, 10.0, 0.00, gL], -20, fr"${gL:.1f}$")
+    # ax11.view_init(elev=32., azim=-75)
+    ax21.quiver(40, 5, 5, 20, 0, 0, color="black", arrow_length_ratio=0.4)
+    ax21.text(60, 5, 5, r"$\vu{x}$", fontsize=9)
+    ax21.quiver(40, 5, 5, 0, 0, 20, color="black", arrow_length_ratio=0.4)
+    ax21.text(40, 5, 25, r"$\vu{z}$", fontsize=9)
+
+    ax21.legend(title=r"$gL$", loc="lower center", ncol=2, columnspacing=0.5, handlelength=0.5, handletextpad=0.2, frameon=False, fontsize=9)
+    ax21.set_axis_off()
 
     # plot lp vs g
-    L=100
+    L = 100
     kappa = 10
     fs = [0.00]
-    gs = np.arange(0.00, 0.201, 0.01)
+    gLs = np.arange(0.00, 2.001, 0.20)
     lss = ['-', "--"]
+    markers = ["s", "o", "v"]
     color = ["tomato", "royalblue"]
     for i in range(len(fs)):
         f = fs[i]
         ls = lss[i]
-        param = [(L, kappa, f, g) for g in gs]
+        ls = "none"
+        marker = markers[i]
+        param = [(L, kappa, f, gL) for gL in gLs]
         lps, lp_thetas = get_lp_data(folder, param)
         if i == 0:
-            ax12.plot(gs, lps, color="tomato", ls=ls, label=fr"$l_p$")
-            ax12.plot(gs, lp_thetas, color="royalblue", ls=ls, label=r"$l_{p,\theta}$")
+            ax22.plot(gLs, lps, color="tomato", ls=ls, marker=marker, ms=ms, mfc="None", label=r"$l_p$")
+            ax22.plot(gLs, lp_thetas, color="royalblue", ls=ls, marker=marker, ms=ms, mfc="None", label=r"$l_{p,\theta}$")
         else:
-            ax12.plot(gs, lps, color="tomato", ls=ls)
-            ax12.plot(gs, lp_thetas, color="royalblue", ls=ls)
-        #ax12.text(0, kappa-1.5, fr"$f={f}$", fontsize=9)
+            ax22.plot(gLs, lps, color="tomato", marker=marker, ls=ls, ms=ms, mfc="None")
+            ax22.plot(gLs, lp_thetas, color="royalblue", marker=marker, ls=ls, ms=ms, mfc="None")
+        # ax22.text(0, kappa-1.5, fr"$f={f}$", fontsize=9)
 
-    ax12.legend(ncol=2, columnspacing=0.5, handlelength=0.5, handletextpad=0.1, frameon=False, fontsize=9)
-    ax12.set_ylabel(r"$l_p/l_b$", fontsize=9, labelpad=labelpad)
-    # ax12.set_xlabel(r"$fl_b/(k_B T)$", fontsize=9, labelpad=labelpad)
-    ax12.tick_params(which="both", direction="in", top="on", right="on", labelbottom=False, labelleft=True, labelsize=7)
+    ax22.legend(title=r"$f=0$", ncol=2, columnspacing=0.5, handlelength=0.5, handletextpad=0.2, frameon=False, fontsize=9)
+    ax22.set_ylabel(r"$l_p,l_{p,\theta}$", fontsize=9, labelpad=labelpad)
+    ax22.set_xlabel(r"$gL$", fontsize=9, labelpad=labelpad)
+    ax22.tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=True, labelsize=7)
 
-    # ax12.xaxis.set_major_locator(plt.MultipleLocator(0.2))
-    # ax12.xaxis.set_minor_locator(plt.MultipleLocator(0.1))
-    ax12.yaxis.set_major_locator(plt.MultipleLocator(10))
-    ax12.yaxis.set_minor_locator(plt.MultipleLocator(5))
-    #ax12.set_ylim(2, 13)
+    # ax22.xaxis.set_major_locator(plt.MultipleLocator(0.2))
+    # ax22.xaxis.set_minor_locator(plt.MultipleLocator(0.1))
+    ax22.yaxis.set_major_locator(plt.MultipleLocator(2))
+    ax22.yaxis.set_minor_locator(plt.MultipleLocator(1))
+    # ax22.set_ylim(2, 13)
 
-    # plot R and Rg vs. g
+    # plot R2 and Rg vs. g
     fs = [0.00, 0.20]
     for i in range(len(fs)):
         f = fs[i]
         ls = lss[i]
-        param = [(L, kappa, f, g) for g in gs]
-        R, Rg, R_err, Rg_err = get_obs_data(folder, param)
-        ax22.errorbar(gs, R, yerr=R_err, ls=ls, label=fr"${f}$")
-        ax32.errorbar(gs, Rg, yerr=Rg_err, ls=ls, label=fr"${f}$")
+        ls = "None"
+        marker = markers[i]
+        param = [(L, kappa, f, gL) for gL in gLs]
+        R2, Rg, Rxx, Rxz = get_obs_data(folder, param)
+        # ax23.errorbar(gLs, R2/L, yerr=R2_err/L, ls=ls, marker=marker, ms=ms, mfc="None", label=fr"${f:.1f}$")
+        ax23.plot(gLs, R2/L, ls=ls, marker=marker, ms=ms, mfc="None", label=fr"${f:.1f}$")
+        # ax24.errorbar(gLs, Rg, yerr=Rg_err, ls=ls,  marker=marker, ms=ms, mfc="None", label=fr"${f:.1f}$")
+        if f == 0:
+            ax24.plot(gLs, Rg, ls=ls, marker=marker, ms=ms, mfc="None", label=r"$R_g$")
+            ax24.plot(gLs, Rxx, ls=ls, marker=marker, ms=ms, mfc="None", label=r"$R_{xx}$")
+            ax24.plot(gLs, Rxz, ls=ls, marker=marker, ms=ms, mfc="None", label=r"$R_{xz}$")
 
-    ax22.legend(title=r"$f l_b/(k_B T)$", ncol=1, columnspacing=0.5, handlelength=0.5, handletextpad=0.1, frameon=False, fontsize=9)
-    ax22.set_ylabel(r"$R/l_b$", fontsize=9, labelpad=labelpad)
-    # ax22.set_xlabel(r"$fl_b/(k_B T)$", fontsize=9, labelpad=labelpad)
-    ax22.tick_params(which="both", direction="in", top="on", right="on", labelbottom=False, labelleft=True, labelsize=7)
-    # ax22.xaxis.set_major_locator(plt.MultipleLocator(0.2))
-    # ax22.xaxis.set_minor_locator(plt.MultipleLocator(0.1))
-    ax22.yaxis.set_major_locator(plt.MultipleLocator(10))
-    ax22.yaxis.set_minor_locator(plt.MultipleLocator(5))
+    ax23.legend(title=r"$f$", ncol=1, columnspacing=0.5, handlelength=0.5, handletextpad=0.2, frameon=False, fontsize=9)
+    ax23.set_ylabel(r"$R^2/L$", fontsize=9, labelpad=labelpad)
+    ax23.set_xlabel(r"$gL$", fontsize=9, labelpad=labelpad)
+    ax23.tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=True, labelsize=7)
+    # ax23.xaxis.set_major_locator(plt.MultipleLocator(0.2))
+    # ax23.xaxis.set_minor_locator(plt.MultipleLocator(0.1))
+    ax23.yaxis.set_major_locator(plt.MultipleLocator(10))
+    ax23.yaxis.set_minor_locator(plt.MultipleLocator(5))
 
-    ax32.legend(title=r"$f l_b/(k_B T)$", ncol=1, columnspacing=0.5, handlelength=0.5, handletextpad=0.1, frameon=False, fontsize=9)
-    ax32.set_ylabel(r"$R_g/l_b$", fontsize=9, labelpad=labelpad)
-    ax32.set_xlabel(r"$gl^2_b/(k_B T)$", fontsize=9, labelpad=labelpad)
-    ax32.tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=True, labelsize=7)
-    ax32.xaxis.set_major_locator(plt.MultipleLocator(0.05))
-    ax32.xaxis.set_minor_locator(plt.MultipleLocator(0.025))
-    ax32.yaxis.set_major_locator(plt.MultipleLocator(4))
-    ax32.yaxis.set_minor_locator(plt.MultipleLocator(2))
+    ax24.legend(title=r"$f=0$", ncol=2, columnspacing=0.5, handlelength=0.5, handletextpad=0.2, frameon=False, fontsize=9)
+    ax24.set_ylabel(r"$R_g,R_{xx},R_{xz}$", fontsize=9, labelpad=labelpad)
+    ax24.set_xlabel(r"$gL$", fontsize=9, labelpad=labelpad)
+    ax24.tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=True, labelsize=7)
+    #ax24.set_ylim(4,25)
+    ax24.xaxis.set_major_locator(plt.MultipleLocator(0.5))
+    ax24.xaxis.set_minor_locator(plt.MultipleLocator(0.25))
+    ax24.yaxis.set_major_locator(plt.MultipleLocator(4))
+    ax24.yaxis.set_minor_locator(plt.MultipleLocator(2))
 
+    annotation = [r"$(a)$", r"$(b)$", r"$(c)$", r"$(d)$", r"$(e)$", r"$(f)$", r"$(g)$", r"$(h)$"]
+
+    axs = [ax11_2d, ax12, ax13, ax14, ax21_2d, ax22, ax23, ax24]
+    for i in range(len(axs)):
+        ax = axs[i]
+        ax.text(0.82, 0.07, annotation[i], fontsize=9, transform=ax.transAxes)
+
+    # ax12.text(0.82, 0.07, annotation[i], fontsize=9, transform=ax12.transAxes)
+    # ax22.text(0.82, 0.07, annotation[i], fontsize=9, transform=ax22.transAxes)
 
     plt.tight_layout(pad=0.05)
     plt.savefig("./figures/obs_f_g.pdf", format="pdf")
