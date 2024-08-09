@@ -113,7 +113,7 @@ def ax_plot_tan_rot_update(ax, yshift=-4):
     xcorr = -0.05
     zcorr = -0.1
     ax.annotate(r"$k$", xy=(x[k]+xcorr, z[k]+zcorr), fontsize=9)
-    ax.annotate(r"$l$", xy=(x[k+1]+xcorr, z[k+1]+zcorr), fontsize=9)
+    #ax.annotate(r"$k'$", xy=(x[k+1]+xcorr, z[k+1]+zcorr), fontsize=9)
 
     # ax.set_xlim(-0.5,6)
     # ax.set_ylim(-1.5,2)

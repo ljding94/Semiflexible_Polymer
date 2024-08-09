@@ -886,7 +886,7 @@ void semiflexible_polymer::run_simultion(int therm_sweep, int MC_sweeps, int ste
         std::cout << "randomization(beta=0) sweep " << i << " out of " << therm_sweep << " (" << (i * 100) / therm_sweep << "%)\r";
         for (int j = 0; j < step_per_sweep; j++)
         {
-            bead_ij = 2 + int(rand_uni(gen) * (L - 1)); //~[2,L]
+            bead_ij = 2 + int(rand_uni(gen) * Epar.kappa); //~[2,L]
             bead_ij = 2;
             bead_i = int(rand_uni(gen) * (L - bead_ij)); // take between [0,L-bead_ij]
             bead_j = bead_i + bead_ij;
@@ -906,7 +906,7 @@ void semiflexible_polymer::run_simultion(int therm_sweep, int MC_sweeps, int ste
 
         for (int j = 0; j < step_per_sweep; j++)
         {
-            bead_ij = 2 + int(rand_uni(gen) * (L - 1));  //~[2,L]
+            bead_ij = 2 + int(rand_uni(gen) * Epar.kappa);  //~[2,L]
             bead_i = int(rand_uni(gen) * (L - bead_ij)); // take between [0,L-bead_ij]
             bead_j = bead_i + bead_ij;
             update_bead_concerted_rotation(bead_i, bead_j);

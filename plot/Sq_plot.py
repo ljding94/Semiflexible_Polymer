@@ -41,8 +41,8 @@ def plot_Sq(tex_lw=240.71031, ppi=72):
     ms = 4
     labelpad = -0.0
     # plot Sq for various kappa
-    folder = "../data/20240730"
-    L = 100
+    folder = "../data/20240805"
+    L = 200
     kappas = [2.0, 4.0, 8.0, 16.0]
     param = [(L, kappa, 0.0, 0.0) for kappa in kappas]
     Sqs, qBs = get_Sq_data(folder, param)
@@ -66,7 +66,11 @@ def plot_Sq(tex_lw=240.71031, ppi=72):
     ax10.set_ylabel(r"$\Delta S(q)$", fontsize=9, labelpad=labelpad)
     ax10.legend(title=r"$\kappa$", ncol=2, columnspacing=0.5, handlelength=0.5, handletextpad=0.2, frameon=False, fontsize=9)
     ax10.tick_params(which="both", direction="in", top="on", right="on", labelbottom=False, labelleft=True, labelsize=7)
+    ax10.yaxis.set_major_locator(plt.MultipleLocator(0.5))
+    ax10.yaxis.set_minor_locator(plt.MultipleLocator(0.25))
 
+
+    folder = "../data/20240807"
     # plot Del Sq for various f
     fs = [0.00, 0.10, 0.20, 0.30]
     param = [(L, 10.0, f, 0.0) for f in fs]
@@ -75,8 +79,10 @@ def plot_Sq(tex_lw=240.71031, ppi=72):
         ax01.semilogx(qBs[i], Sqs[i]/Sq_rod, "-", lw=1, label=f"{fs[i]:.1f}")
     ax01.set_xlabel(r"$q$", fontsize=9, labelpad=labelpad)
     ax01.set_ylabel(r"$\Delta S(q)$", fontsize=9, labelpad=labelpad)
-    ax01.legend(title=r"$f$", ncol=2, columnspacing=0.5, handlelength=0.5, handletextpad=0.2, frameon=False, fontsize=9)
+    ax01.legend(title=r"$f$", ncol=1, columnspacing=0.5, handlelength=0.5, handletextpad=0.2, frameon=False, fontsize=9)
     ax01.tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=True, labelsize=7)
+    ax01.yaxis.set_major_locator(plt.MultipleLocator(0.5))
+    ax01.yaxis.set_minor_locator(plt.MultipleLocator(0.25))
 
     # plot Del Sq for various g
     #gs = np.arange(0.00, 0.201, 0.01)
@@ -87,8 +93,10 @@ def plot_Sq(tex_lw=240.71031, ppi=72):
         ax11.semilogx(qBs[i], Sqs[i]/Sq_rod, "-", lw=1, label=f"{gLs[i]:.1f}")
     ax11.set_xlabel(r"$q$", fontsize=9, labelpad=labelpad)
     ax11.set_ylabel(r"$\Delta S(q)$", fontsize=9, labelpad=labelpad)
-    ax11.legend(title=r"$gL$", ncol=2, columnspacing=0.5, handlelength=0.5, handletextpad=0.2, frameon=False, fontsize=9)
+    ax11.legend(title=r"$gL$", ncol=1, columnspacing=0.5, handlelength=0.5, handletextpad=0.2, frameon=False, fontsize=9)
     ax11.tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=True, labelsize=7)
+    ax11.yaxis.set_major_locator(plt.MultipleLocator(0.5))
+    ax11.yaxis.set_minor_locator(plt.MultipleLocator(0.25))
 
     annotation = [r"$(a)$", r"$(b)$", r"$(c)$", r"$(d)$"]
     for ax in [ax00, ax10, ax01, ax11]:

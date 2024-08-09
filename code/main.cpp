@@ -52,13 +52,13 @@ int main(int argc, char const *argv[])
             std::cout << "running on local machine\n";
             folder = "../data/scratch_local/" + today;
         } else {
-            bin_num = 100;
+            bin_num = 80;
             therm_sweeps = 2000;
             MC_sweeps = 4000;
-            step_per_sweep = 100*L;
+            step_per_sweep = L*L;
             // running on cluster
             std::cout << "running on cluster\n";
-            folder = "/home/dingl1/semiflexible_polymer/data_cluster/data_pool"; // dump data to data pool first
+            folder = "/global/homes/d/dingl1/semiflexible_polymer/data_hpc/data_pool"; // dump data to data pool first
         }
         if (!std::filesystem::exists(folder))
             {
