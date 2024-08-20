@@ -26,6 +26,7 @@ struct observable
     double Y;                            // end to end Y distance  |(r(L-1) + t(L-1) - r(0)).y|
     double Z;                            // end to end Z distance  |(r(L-1) + t(L-1) - r(0)).z|
     double XsignZ;                       // end to end X distance  times sign of Z, to eliminate +- symmetry
+    double ZsignX;                       // end to end Z distance  times sign of X, to eliminate +- symmetry
     double R;                            // end to end distance  |r(L-1) + t(L-1) - r(0)|
     double R2;                           // end to end distance square
     double Rg2;                           // radius of gyration
