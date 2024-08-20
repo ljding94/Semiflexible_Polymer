@@ -451,14 +451,15 @@ void semiflexible_polymer::save_observable_to_file(std::string filename, std::ve
             f << "beta=" << beta << "\n";
             f << "f=" << Epar.f << "\n";
             f << "g=" << Epar.g << "\n";
-            f << "E(energy),Tb(total bending), X(end to end X distance), Y(end to end Y distance), Z(end to end Z distance), R(end to end distance), R^2,"
+            f << "E(energy),Tb(total bending), X(end to end X distance), Y(end to end Y distance), Z(end to end Z distance), Xsign(Z), R(end to end distance), R^2,"
               << "Rg^2(radius of gyration square), Sxx(gyration tensor component), Syy, Szz, Sxy, Sxz, Syz ";
             for (int i = 0; i < number_of_polymer; i++)
             {
                 f << "\n"
                   << obs_ensemble[i].E << "," << obs_ensemble[i].Tb
                   << "," << obs_ensemble[i].X << "," << obs_ensemble[i].Y
-                  << "," << obs_ensemble[i].Z << "," << obs_ensemble[i].R << "," << obs_ensemble[i].R2 << ","  << obs_ensemble[i].Rg2
+                  << "," << obs_ensemble[i].Z << "," << obs_ensemble[i].XsignZ
+                  << "," << obs_ensemble[i].R << "," << obs_ensemble[i].R2 << "," << obs_ensemble[i].Rg2
                   << "," << obs_ensemble[i].Sxx << "," << obs_ensemble[i].Syy << "," << obs_ensemble[i].Szz
                   << "," << obs_ensemble[i].Sxy << "," << obs_ensemble[i].Sxz << "," << obs_ensemble[i].Syz;
             }
@@ -470,6 +471,7 @@ void semiflexible_polymer::save_observable_to_file(std::string filename, std::ve
             // calculate average and standard deviation of E
             double avg_E = 0.0, std_E = 0.0, avg_Tb = 0.0, std_Tb = 0.0;
             double avg_X = 0.0, std_X = 0.0, avg_Y = 0.0, std_Y = 0.0, avg_Z = 0.0, std_Z = 0.0;
+            double avg_XsignZ, std_XsignZ;
             double avg_R = 0.0, std_R = 0.0, avg_R2 = 0.0, std_R2 = 0.0;
             double avg_Rg2 = 0.0, std_Rg2 = 0.0;
             double avg_Sxx = 0.0, std_Sxx = 0.0, avg_Syy = 0.0, std_Syy = 0.0, avg_Szz = 0.0, std_Szz = 0.0;
@@ -491,6 +493,7 @@ void semiflexible_polymer::save_observable_to_file(std::string filename, std::ve
                 avg_X += obs_ensemble[i].X;
                 avg_Y += obs_ensemble[i].Y;
                 avg_Z += obs_ensemble[i].Z;
+                avg_XsignZ += obs_ensemble[i].XsignZ;
                 avg_R += obs_ensemble[i].R;
                 avg_R2 += obs_ensemble[i].R2;
                 avg_Rg2 += obs_ensemble[i].Rg2;
@@ -511,6 +514,7 @@ void semiflexible_polymer::save_observable_to_file(std::string filename, std::ve
             avg_X /= M;
             avg_Y /= M;
             avg_Z /= M;
+            avg_XsignZ /= M;
             avg_R /= M;
             avg_R2 /= M;
             avg_Rg2 /= M;
@@ -541,6 +545,7 @@ void semiflexible_polymer::save_observable_to_file(std::string filename, std::ve
                 std_X += (obs_ensemble[i].X - avg_X) * (obs_ensemble[i].X - avg_X);
                 std_Y += (obs_ensemble[i].Y - avg_Y) * (obs_ensemble[i].Y - avg_Y);
                 std_Z += (obs_ensemble[i].Z - avg_Z) * (obs_ensemble[i].Z - avg_Z);
+                std_XsignZ += (obs_ensemble[i].XsignZ - avg_XsignZ) * (obs_ensemble[i].XsignZ - avg_XsignZ);
                 std_R += (obs_ensemble[i].R - avg_R) * (obs_ensemble[i].R - avg_R);
                 std_R2 += (obs_ensemble[i].R2 - avg_R2) * (obs_ensemble[i].R2 - avg_R2);
                 std_Rg2 += (obs_ensemble[i].Rg2 - avg_Rg2) * (obs_ensemble[i].Rg2 - avg_Rg2);
@@ -562,6 +567,7 @@ void semiflexible_polymer::save_observable_to_file(std::string filename, std::ve
             std_X = std::sqrt(std_X / M);
             std_Y = std::sqrt(std_Y / M);
             std_Z = std::sqrt(std_Z / M);
+            std_XsignZ = std::sqrt(std_XsignZ / M);
             std_R = std::sqrt(std_R / M);
             std_R2 = std::sqrt(std_R2 / M);
             std_Rg2 = std::sqrt(std_Rg2 / M);
@@ -578,9 +584,9 @@ void semiflexible_polymer::save_observable_to_file(std::string filename, std::ve
                 std_tts[j] = std::sqrt(std_tts[j] / M);
             }
             // write parameters and stats to the file
-            f << "stats,L,kappa,f,g,E,Tb,X,Y,Z,R,R2,Rg2,Sxx,Syy,Szz,Sxy,Sxz,Syz,Sq\n";
+            f << "stats,L,kappa,f,g,E,Tb,X,Y,Z,Xsign(Z),R,R2,Rg2,Sxx,Syy,Szz,Sxy,Sxz,Syz,Sq\n";
             f << "\nmean," << L << "," << Epar.kappa << "," << Epar.f << "," << Epar.g << "," << avg_E << "," << avg_Tb
-              << "," << avg_X << "," << avg_Y << "," << avg_Z << "," << avg_R << "," << avg_R2 << "," << avg_Rg2 << "," << avg_Sxx << "," << avg_Syy
+              << "," << avg_X << "," << avg_Y << "," << avg_Z << "," << avg_XsignZ << "," << avg_R << "," << avg_R2 << "," << avg_Rg2 << "," << avg_Sxx << "," << avg_Syy
               << "," << avg_Szz << "," << avg_Sxy << "," << avg_Sxz << "," << avg_Syz;
             for (int j = 0; j < avg_Sq.size(); j++)
             {
@@ -589,7 +595,7 @@ void semiflexible_polymer::save_observable_to_file(std::string filename, std::ve
 
             f << "\nstd/sqrt(number of polymer),NA,NA,NA,NA," << std_E / sqrt_M << "," << std_Tb / sqrt_M
               << "," << std_X / sqrt_M << "," << std_Y / sqrt_M
-              << "," << std_Z / sqrt_M << "," << std_R / sqrt_M << ","  << std_R2 / sqrt_M << ","  << std_Rg2 / sqrt_M
+              << "," << std_Z / sqrt_M << "," << std_XsignZ / sqrt_M << "," << std_R / sqrt_M << "," << std_R2 / sqrt_M << "," << std_Rg2 / sqrt_M
               << "," << std_Sxx / sqrt_M << "," << std_Syy / sqrt_M << "," << std_Szz / sqrt_M
               << "," << std_Sxy / sqrt_M << "," << std_Sxz / sqrt_M << "," << std_Syz / sqrt_M;
             for (int j = 0; j < std_Sq.size(); j++)
@@ -597,23 +603,23 @@ void semiflexible_polymer::save_observable_to_file(std::string filename, std::ve
                 f << "," << std_Sq[j] / sqrt_M;
             }
 
-            f << "\n qB,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA";
+            f << "\n qB,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA";
             for (int j = 0; j < obs_ensemble[0].qB.size(); j++)
             {
                 f << "," << obs_ensemble[0].qB[j];
             }
 
-            f << "\n tts,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA";
+            f << "\n tts,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA";
             for (int j = 0; j < avg_tts.size(); j++)
             {
                 f << "," << avg_tts[j];
             }
-            f << "\nstd_tts/sqrt(number of polymer),NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA";
+            f << "\nstd_tts/sqrt(number of polymer),NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA";
             for (int j = 0; j < std_tts.size(); j++)
             {
                 f << "," << std_tts[j] / sqrt_M;
             }
-            f << "\n r(for tts),NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA";
+            f << "\n r(for tts),NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA";
             for (int j = 0; j < obs_ensemble[0].spB.size(); j++)
             {
                 f << "," << obs_ensemble[0].spB[j];
@@ -640,6 +646,7 @@ observable semiflexible_polymer::measure_observable(int bin_num)
     obs.X = R[0];
     obs.Y = R[1];
     obs.Z = R[2];
+    obs.XsignZ = (R[2] > 0) ? R[0] : -R[0];
     obs.Rg2 = calc_radius_of_gyration_square();
 
     std::vector<double> Sij = {0, 0, 0, 0, 0, 0};
@@ -872,7 +879,7 @@ double semiflexible_polymer::calc_bending_of_two_t(std::vector<double> t1, std::
     return ans;
 }
 
-void semiflexible_polymer::run_simultion(int therm_sweep, int MC_sweeps, int step_per_sweep, std::string folder, std::string finfo, int bin_num)
+void semiflexible_polymer::run_simultion(int therm_sweep, int MC_sweeps, int step_per_sweep, std::string folder, std::string finfo, int bin_num, int save_more_config)
 {
     std::vector<observable> obs_ensemble;
 
@@ -906,8 +913,8 @@ void semiflexible_polymer::run_simultion(int therm_sweep, int MC_sweeps, int ste
 
         for (int j = 0; j < step_per_sweep; j++)
         {
-            bead_ij = 2 + int(rand_uni(gen) * Epar.kappa);  //~[2,L]
-            bead_i = int(rand_uni(gen) * (L - bead_ij)); // take between [0,L-bead_ij]
+            bead_ij = 2 + int(rand_uni(gen) * Epar.kappa); //~[2,L]
+            bead_i = int(rand_uni(gen) * (L - bead_ij));   // take between [0,L-bead_ij]
             bead_j = bead_i + bead_ij;
             update_bead_concerted_rotation(bead_i, bead_j);
 
@@ -924,6 +931,12 @@ void semiflexible_polymer::run_simultion(int therm_sweep, int MC_sweeps, int ste
         std::cout << "Error: beta is not 1 at the end of thermalization\n";
         beta = 1;
     }
+    if (save_more_config)
+    {
+        std::cout << "saving more config, creating foler: " << folder + "/" + finfo << std::endl;
+        std::filesystem::create_directory(folder + "/" + finfo);
+    }
+
     for (int i = 0; i < MC_sweeps; i++)
     {
         std::cout << "MC sweep " << i << " out of " << MC_sweeps << " (" << (i * 100) / MC_sweeps << "%)\r";
@@ -941,6 +954,10 @@ void semiflexible_polymer::run_simultion(int therm_sweep, int MC_sweeps, int ste
         }
         observable obs = measure_observable(bin_num);
         obs_ensemble.push_back(obs);
+        if (i % 100 == 0)
+        {
+            save_polymer_to_file(folder + "/" + finfo + "/config_" + std::to_string(int(i / 100)) + ".csv");
+        }
     }
     std::cout << "\n";
     std::cout << "conrot_acceptance rate:" << conrot_acceptance_rate / MC_sweeps / step_per_sweep << std::endl;

@@ -25,6 +25,7 @@ struct observable
     double X;                            // end to end X distance  |(r(L-1) + t(L-1) - r(0)).x|
     double Y;                            // end to end Y distance  |(r(L-1) + t(L-1) - r(0)).y|
     double Z;                            // end to end Z distance  |(r(L-1) + t(L-1) - r(0)).z|
+    double XsignZ;                       // end to end X distance  times sign of Z, to eliminate +- symmetry
     double R;                            // end to end distance  |r(L-1) + t(L-1) - r(0)|
     double R2;                           // end to end distance square
     double Rg2;                           // radius of gyration
@@ -89,7 +90,7 @@ public:
     void save_polymer_to_file(std::string filename);
     void save_observable_to_file(std::string filename, std::vector<observable> obs_ensemble, bool save_detail = false);
 
-    void run_simultion(int therm_sweep, int MC_sweeps, int step_per_sweep, std::string folder, std::string finfo, int bin_num);
+    void run_simultion(int therm_sweep, int MC_sweeps, int step_per_sweep, std::string folder, std::string finfo, int bin_num, int save_more_config);
 
     // spB stand for s per B or s/P
 
