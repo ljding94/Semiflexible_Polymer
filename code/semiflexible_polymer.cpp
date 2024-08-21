@@ -472,7 +472,7 @@ void semiflexible_polymer::save_observable_to_file(std::string filename, std::ve
             // calculate average and standard deviation of E
             double avg_E = 0.0, std_E = 0.0, avg_Tb = 0.0, std_Tb = 0.0;
             double avg_X = 0.0, std_X = 0.0, avg_Y = 0.0, std_Y = 0.0, avg_Z = 0.0, std_Z = 0.0;
-            double avg_XsignZ, std_XsignZ, avg_ZsignX, std_ZsignX;
+            double avg_XsignZ = 0.0, std_XsignZ=0.0, avg_ZsignX=0.0, std_ZsignX=0.0;
             double avg_R = 0.0, std_R = 0.0, avg_R2 = 0.0, std_R2 = 0.0;
             double avg_Rg2 = 0.0, std_Rg2 = 0.0;
             double avg_Sxx = 0.0, std_Sxx = 0.0, avg_Syy = 0.0, std_Syy = 0.0, avg_Szz = 0.0, std_Szz = 0.0;

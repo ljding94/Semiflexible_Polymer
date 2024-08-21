@@ -33,6 +33,33 @@ def get_obs_data(folder, param):
     return np.array(Xs), np.array(Ys), np.array(Zs), np.array(R2s), np.array(Rg2s), np.array(Rxxs), np.array(Rxzs)
 
 
+def get_obs_data_g(folder, param):
+    Xs, Ys, Zs, XsignZs, ZsignXs, R2s, Rg2s, R2_errs, Rg2_errs = [], [], [], [], [], [], [], [], []
+    X_errs, Rxxs, Rxzs, Rxx_errs, Rxz_errs = [], [], [], [], []
+    for L, kappa, f, gL in param:
+        finfo = f"L{L}_kappa{kappa:.1f}_f{f:.2f}_gL{gL:.2f}"
+        filename = f"{folder}/obs_{finfo}.csv"
+        data = np.genfromtxt(filename, delimiter=',', skip_header=1)
+        X, Y, Z, R2, Rg2, Rxx, Rxz = data[0, 7], data[0, 8], data[0, 9], data[0, 11], data[0, 12], data[0, 13], data[0, 17]
+        X_err, R2_err, Rg2_err, Rxx_err, Rxz_err = data[1, 7], data[1, 11], data[1, 12], data[1, 13], data[1, 17]
+
+        Xs.append(X)
+        Ys.append(Y)
+        Zs.append(Z)
+        R2s.append(R2)
+        Rg2s.append(Rg2)
+        R2_errs.append(R2_err)
+        Rg2_errs.append(Rg2_err)
+
+        X_errs.append(X_err)
+        Rxxs.append(Rxx)
+        Rxzs.append(Rxz)
+        Rxx_errs.append(Rxx_err)
+        Rxz_errs.append(Rxz_err)
+
+    return np.array(Xs), np.array(Ys), np.array(Zs), np.array(R2s), np.array(Rg2s), np.array(Rxxs), np.array(Rxzs)
+
+
 def get_tts_data(folder, param):
     tts = []
     tts_err = []
