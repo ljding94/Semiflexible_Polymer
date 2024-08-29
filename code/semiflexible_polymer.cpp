@@ -784,24 +784,17 @@ std::vector<std::vector<double>> semiflexible_polymer::calc_structure_factor_2d(
                 for (int ky = 0; ky < bin_num; ky++)
                 {
                     qy = qB[ky];
-                    SqB_Re_buff = 1.0 / N * std::cos(qx * r[0] + qy * r[1]);
-                    SqB_Im_buff = 1.0 / N * std::sin(qx * r[0] + qy * r[1]);
+                    SqB_Re_buff = 1.0 / (N*(N-1)) * std::cos(qx * r[0] + qy * r[1]);
+                    SqB_Im_buff = 1.0 / (N*(N-1)) * std::sin(qx * r[0] + qy * r[1]);
                     SqB_Re[kx][ky] += SqB_Re_buff;
                     SqB_Im[kx][ky] += SqB_Im_buff;
+                    SqB_Re[2 * bin0 - kx][2 * bin0 - ky] += SqB_Re_buff;
+                    SqB_Im[2 * bin0 - kx][2 * bin0 - ky] += SqB_Im_buff;
                 }
             }
         }
     }
 
-    // symmetrize
-    for (int kx = bin0; kx < bin_num; kx++)
-    {
-        for (int ky = 0; ky < bin_num; ky++)
-        {
-            SqB_Re[2 * bin0 - kx][2 * bin0 - ky] = SqB_Re[kx][ky];
-            SqB_Im[2 * bin0 - kx][2 * bin0 - ky] = SqB_Im[kx][ky];
-        }
-    }
     // calculate SqB
     for (int kx = 0; kx < bin_num; kx++)
     {
