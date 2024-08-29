@@ -46,7 +46,7 @@ int main(int argc, char const *argv[])
             bin_num = 51;
             therm_sweeps = 1500;
             MC_sweeps = 3000;
-            step_per_sweep = 10*L*L; //  note: 10L^2 * (1000+1000+2000) for L1000 take 400s
+            step_per_sweep = L*L; //  note: 10L^2 * (1000+1000+2000) for L1000 take 400s
             // use "prog name par* local" for local running
             // used for local running!
             std::cout << "running on local machine\n";
