@@ -30,8 +30,8 @@ def main():
     # return 0
     '''
 
-    folder = "../data/20240730"
-    L = 100
+    folder = "../data/20240821"
+    L = 200
     kappa = 10.0
     gL = 0.0
     parameters = []
@@ -47,12 +47,13 @@ def main():
     #plot_obs(folder, finfos, parameters, "f")
     #return 0
 
-    L = 100
+    folder = "../data/20240820"
+    L = 200
     kappa = 10.0
     f = 0.0
     parameters = []
     finfos = []
-    gLs = np.arange(0.00, 2.001, 0.20)
+    gLs = np.arange(0.00, 1.501, 0.10)
     for gL in gLs:
         finfo = f"L{L}_kappa{kappa:.1f}_f{f:.2f}_gL{gL:.2f}"
         parameters.append((L, kappa, f, gL))

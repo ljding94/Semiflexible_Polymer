@@ -472,7 +472,7 @@ void semiflexible_polymer::save_observable_to_file(std::string filename, std::ve
             // calculate average and standard deviation of E
             double avg_E = 0.0, std_E = 0.0, avg_Tb = 0.0, std_Tb = 0.0;
             double avg_X = 0.0, std_X = 0.0, avg_Y = 0.0, std_Y = 0.0, avg_Z = 0.0, std_Z = 0.0;
-            double avg_XsignZ = 0.0, std_XsignZ=0.0, avg_ZsignX=0.0, std_ZsignX=0.0;
+            double avg_XsignZ = 0.0, std_XsignZ = 0.0, avg_ZsignX = 0.0, std_ZsignX = 0.0;
             double avg_R = 0.0, std_R = 0.0, avg_R2 = 0.0, std_R2 = 0.0;
             double avg_Rg2 = 0.0, std_Rg2 = 0.0;
             double avg_Sxx = 0.0, std_Sxx = 0.0, avg_Syy = 0.0, std_Syy = 0.0, avg_Szz = 0.0, std_Szz = 0.0;
@@ -480,6 +480,7 @@ void semiflexible_polymer::save_observable_to_file(std::string filename, std::ve
 
             std::vector<double> avg_Sq(obs_ensemble[0].Sq.size(), 0.0);
             std::vector<double> std_Sq(obs_ensemble[0].Sq.size(), 0.0);
+            std::vector<std::vector<double>> avg_Sq2D(obs_ensemble[0].Sq2D.size(), std::vector<double>(obs_ensemble[0].Sq2D[0].size(), 0.0));
             std::vector<double> avg_tts(obs_ensemble[0].tts.size(), 0.0);
             std::vector<double> std_tts(obs_ensemble[0].tts.size(), 0.0);
 
@@ -510,6 +511,13 @@ void semiflexible_polymer::save_observable_to_file(std::string filename, std::ve
                     avg_Sq[j] += obs_ensemble[i].Sq[j];
                     avg_tts[j] += obs_ensemble[i].tts[j];
                 }
+                for (int kx = 0; kx < obs_ensemble[i].Sq2D.size(); kx++)
+                {
+                    for (int ky = 0; ky < obs_ensemble[i].Sq2D[kx].size(); ky++)
+                    {
+                        avg_Sq2D[kx][ky] += obs_ensemble[i].Sq2D[kx][ky];
+                    }
+                }
             }
             avg_E /= M;
             avg_Tb /= M;
@@ -538,6 +546,13 @@ void semiflexible_polymer::save_observable_to_file(std::string filename, std::ve
             {
                 avg_Sq[j] /= M;
                 avg_tts[j] /= M;
+            }
+            for (int kx = 0; kx < obs_ensemble[0].Sq2D.size(); kx++)
+            {
+                for (int ky = 0; ky < obs_ensemble[0].Sq2D[kx].size(); ky++)
+                {
+                    avg_Sq2D[kx][ky] /= M;
+                }
             }
 
             // get std
@@ -631,6 +646,14 @@ void semiflexible_polymer::save_observable_to_file(std::string filename, std::ve
             {
                 f << "," << obs_ensemble[0].spB[j];
             }
+            for (int kx = 0; kx < obs_ensemble[0].Sq2D.size(); kx++)
+            {
+                f << "\nSq2D,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA";
+                for (int ky = 0; ky < obs_ensemble[0].Sq2D[kx].size(); ky++)
+                {
+                    f << "," << obs_ensemble[0].Sq2D[kx][ky];
+                }
+            }
         }
     }
     f.close();
@@ -666,16 +689,22 @@ observable semiflexible_polymer::measure_observable(int bin_num)
     obs.Sxz = Sij[4];
     obs.Syz = Sij[5];
 
-    double qB_i = 1e-3; // 0.2*M_PI/L; //0.1/L; ;
-    double qB_f = 1e0;  // M_PI;//100.0/L; //M_PI;
+    double qB_i = -0.4 * M_PI;               // 0.2*M_PI/L; //0.1/L; ;
+    double dqB = 0.8 * M_PI / (bin_num - 1); // M_PI;//100.0/L; //M_PI;
     obs.qB.resize(bin_num);
+    for (int k = 0; k < bin_num; k++)
+    {
+        obs.qB[k] = qB_i + dqB * k;
+    }
     obs.Sq.resize(bin_num);
-    //= std::vector<double>(bin_num, 0);
+    obs.Sq2D = calc_structure_factor_2d(obs.qB);
+    /*
     for (int k = 0; k < bin_num; k++)
     {
         obs.qB[k] = qB_i * std::pow(qB_f / qB_i, 1.0 * k / (bin_num - 1)); // uniform in log scale
     }
     obs.Sq = calc_structure_factor(obs.qB);
+    */
 
     obs.spB.resize(bin_num);
     obs.tts.resize(bin_num);
@@ -714,6 +743,71 @@ std::vector<double> semiflexible_polymer::calc_structure_factor(std::vector<doub
                 q = qB[k];                                         // B = 1
                 SqB[k] += 2.0 / N / N * std::sin(q * r) / (q * r); // normalize to 1 at q=0
             }
+        }
+    }
+    return SqB;
+}
+
+std::vector<std::vector<double>> semiflexible_polymer::calc_structure_factor_2d(std::vector<double> qB)
+{
+    // measrue 2d structure factor
+    int bin_num = qB.size();
+    int bin0 = (bin_num - 1) / 2;
+    if (bin_num % 2 == 0)
+    {
+        std::cout << "Error: bin_num should be odd" << std::endl;
+    }
+
+    std::vector<std::vector<double>> R_all{}; // all scattering point's R[axis] value, including all scattering points in each segment
+
+    for (int i = 0; i < size(polymer); i++)
+    {
+        R_all.push_back(polymer[i].r);
+    }
+    int N = R_all.size(); // total number of scattering points
+    std::vector<double> r{0, 0, 0};
+    double qx, qy, SqB_Re_buff, SqB_Im_buff;
+    std::vector<std::vector<double>> SqB(bin_num, std::vector<double>(bin_num, 1.0 / N)); // initialize with 1 due to self overlaping term (see S.H. Chen 1986 eq 18)
+    std::vector<std::vector<double>> SqB_Re(bin_num, std::vector<double>(bin_num, 0));    // real part
+    std::vector<std::vector<double>> SqB_Im(bin_num, std::vector<double>(bin_num, 0));    // imaginary part
+    for (int i = 0; i < N - 1; i++)
+    {
+        for (int j = i + 1; j < N; j++)
+        {
+            r[0] = R_all[j][0] - R_all[i][0];
+            r[1] = R_all[j][1] - R_all[i][1];
+            r[2] = R_all[j][2] - R_all[i][2];
+            // calculate S_q
+            for (int kx = bin0; kx < bin_num; kx++)
+            {
+                qx = qB[kx];
+                for (int ky = 0; ky < bin_num; ky++)
+                {
+                    qy = qB[ky];
+                    SqB_Re_buff = 1.0 / N * std::cos(qx * r[0] + qy * r[1]);
+                    SqB_Im_buff = 1.0 / N * std::sin(qx * r[0] + qy * r[1]);
+                    SqB_Re[kx][ky] += SqB_Re_buff;
+                    SqB_Im[kx][ky] += SqB_Im_buff;
+                }
+            }
+        }
+    }
+
+    // symmetrize
+    for (int kx = bin0; kx < bin_num; kx++)
+    {
+        for (int ky = 0; ky < bin_num; ky++)
+        {
+            SqB_Re[2 * bin0 - kx][2 * bin0 - ky] = SqB_Re[kx][ky];
+            SqB_Im[2 * bin0 - kx][2 * bin0 - ky] = SqB_Im[kx][ky];
+        }
+    }
+    // calculate SqB
+    for (int kx = 0; kx < bin_num; kx++)
+    {
+        for (int ky = 0; ky < bin_num; ky++)
+        {
+            SqB[kx][ky] = SqB_Re[kx][ky] * SqB_Re[kx][ky] + SqB_Im[kx][ky] * SqB_Im[kx][ky];
         }
     }
     return SqB;
@@ -962,7 +1056,7 @@ void semiflexible_polymer::run_simultion(int therm_sweep, int MC_sweeps, int ste
         }
         observable obs = measure_observable(bin_num);
         obs_ensemble.push_back(obs);
-        if (i % 100 == 0)
+        if (i % 100 == 0 && save_more_config)
         {
             save_polymer_to_file(folder + "/" + finfo + "/config_" + std::to_string(int(i / 100)) + ".csv");
         }

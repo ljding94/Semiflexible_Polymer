@@ -5,6 +5,8 @@ from scipy.optimize import curve_fit
 from matplotlib import rc
 from config_plot import *
 
+from mpl_toolkits.mplot3d import Axes3D
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 def get_obs_data(folder, param):
     Xs, Ys, Zs, R2s, Rg2s, R2_errs, Rg2_errs = [], [], [], [], [], [], []
@@ -40,12 +42,15 @@ def get_obs_data_g(folder, param):
         finfo = f"L{L}_kappa{kappa:.1f}_f{f:.2f}_gL{gL:.2f}"
         filename = f"{folder}/obs_{finfo}.csv"
         data = np.genfromtxt(filename, delimiter=',', skip_header=1)
-        X, Y, Z, R2, Rg2, Rxx, Rxz = data[0, 7], data[0, 8], data[0, 9], data[0, 11], data[0, 12], data[0, 13], data[0, 17]
-        X_err, R2_err, Rg2_err, Rxx_err, Rxz_err = data[1, 7], data[1, 11], data[1, 12], data[1, 13], data[1, 17]
+        X, Y, Z, XsignZ, ZsignX, R2, Rg2, Rxx, Rxz = data[0, 7], data[0, 8], data[0, 9], data[0, 10], data[0, 11], data[0, 13], data[0, 14], data[0, 15], data[0, 19]
+        X_err, Y_err, Z_err, XsignZ_err, ZsignX_err, R2_err, Rg2_err, Rxx_err, Rxz_err = data[1, 7], data[1, 8], data[1, 9], data[1, 10], data[1, 11], data[1, 13], data[1, 14], data[1, 15], data[1, 19]
 
         Xs.append(X)
         Ys.append(Y)
         Zs.append(Z)
+        XsignZs.append(XsignZ)
+        ZsignXs.append(ZsignX)
+
         R2s.append(R2)
         Rg2s.append(Rg2)
         R2_errs.append(R2_err)
@@ -57,7 +62,28 @@ def get_obs_data_g(folder, param):
         Rxx_errs.append(Rxx_err)
         Rxz_errs.append(Rxz_err)
 
-    return np.array(Xs), np.array(Ys), np.array(Zs), np.array(R2s), np.array(Rg2s), np.array(Rxxs), np.array(Rxzs)
+    return np.array(Xs), np.array(Ys), np.array(Zs), np.array(XsignZs), np.array(ZsignXs), np.array(R2s), np.array(Rg2s), np.array(Rxxs), np.array(Rxzs)
+
+
+def get_obs_data_err_g(folder, param):
+    X_errs, Y_errs, Z_errs, XsignZ_errs, ZsignX_errs, R2_errs, Rg2_errs, Rxx_errs, Rxz_errs = [], [], [], [], [], [], [], [], []
+    for L, kappa, f, gL in param:
+        finfo = f"L{L}_kappa{kappa:.1f}_f{f:.2f}_gL{gL:.2f}"
+        filename = f"{folder}/obs_{finfo}.csv"
+        data = np.genfromtxt(filename, delimiter=',', skip_header=1)
+        X_err, Y_err, Z_err, XsignZ_err, ZsignX_err, R2_err, Rg2_err, Rxx_err, Rxz_err = data[1, 7], data[1, 8], data[1, 9], data[1, 10], data[1, 11], data[1, 13], data[1, 14], data[1, 15], data[1, 19]
+
+        X_errs.append(X_err)
+        Y_errs.append(Y_err)
+        Z_errs.append(Z_err)
+        XsignZ_errs.append(XsignZ_err)
+        ZsignX_errs.append(ZsignX_err)
+        R2_errs.append(R2_err)
+        Rg2_errs.append(Rg2_err)
+        Rxx_errs.append(Rxx_err)
+        Rxz_errs.append(Rxz_err)
+
+    return np.array(X_errs), np.array(Y_errs), np.array(Z_errs), np.array(XsignZ_errs), np.array(ZsignX_errs), np.array(R2_errs), np.array(Rg2_errs), np.array(Rxx_errs), np.array(Rxz_errs)
 
 
 def get_tts_data(folder, param):
@@ -77,23 +103,52 @@ def get_tts_data(folder, param):
     return tts, tts_err, spBs
 
 
+def get_tts_data_g(folder, param):
+    tts = []
+    tts_err = []
+    spBs = []
+    for L, kappa, f, gL in param:
+        finfo = f"L{L}_kappa{kappa:.1f}_f{f:.2f}_gL{gL:.2f}"
+        filename = f"{folder}/obs_{finfo}.csv"
+        data = np.genfromtxt(filename, delimiter=',', skip_header=1)
+        tt = data[3, 21:]
+        tt_err = data[4, 21:]
+        spB = data[5, 21:]
+        tts.append(tt)
+        tts_err.append(tt_err)
+        spBs.append(spB)
+    return tts, tts_err, spBs
+
+
 def ax_fit(x, a):
     return a*x
 
 
 def fit_l_persistence(spB, tts):
     popt, pcov = curve_fit(ax_fit, spB, np.log(tts))
-    return -1/popt[0]
+    perr = np.sqrt(np.diag(pcov))
+    return -1/popt[0], popt[0]**2*perr[0]
 
 
 def calc_persistence_length(tts, spB):
-    lp = fit_l_persistence(spB, tts)
+    lp, lp_err = fit_l_persistence(spB, tts)
     lp_theta = -1/np.log(tts[1])
     return lp, lp_theta
 
 
 def get_lp_data(folder, param, fitn=5):
     tts, tts_err, spBs = get_tts_data(folder, param)
+    lps = []
+    lp_thetas = []
+    for i in range(len(param)):
+        lp, lp_theta = calc_persistence_length(tts[i][:fitn], spBs[i][:fitn])
+        lps.append(lp)
+        lp_thetas.append(lp_theta)
+    return np.array(lps), np.array(lp_thetas)
+
+
+def get_lp_data_g(folder, param, fitn=5):
+    tts, tts_err, spBs = get_tts_data_g(folder, param)
     lps = []
     lp_thetas = []
     for i in range(len(param)):
@@ -143,7 +198,7 @@ def plot_obs_kappa(tex_lw=240.71031, ppi=72):
     lps, lp_thetas = get_lp_data(folder, param)
     ax21.plot(kappas, lps, marker="x", ms=ms, mfc="None", ls="none", lw=1, label=r"$l_p$")
     ax21.plot(kappas, lp_thetas, marker="+", ms=ms, mfc="None", ls="none", lw=1, label=r"$l_{p,\theta}$")
-    ax21.plot(kappas, kappas, marker="none", ms=ms, mfc="None", ls="-", lw=1, color="gray", label="theory")
+    ax21.plot(kappas, kappas, marker="none", ms=ms, mfc="None", ls="-", lw=1, color="gray")  # label="theory")
     ax21.legend(ncol=2, columnspacing=0.5, handlelength=0.5, handletextpad=0.2, frameon=False, fontsize=9)
     ax21.set_ylabel(r"$l_p,l_{p,\theta}$", fontsize=9, labelpad=labelpad)
     ax21.set_xlabel(r"$\kappa$", fontsize=9, labelpad=labelpad)
@@ -157,7 +212,7 @@ def plot_obs_kappa(tex_lw=240.71031, ppi=72):
     kappas = np.arange(2.0, 20.01, 2.0)
     for L in [100, 200, 400]:
         param = [(L, kappa, 0.0, 0.0) for kappa in kappas]
-        X, R2s, Rgs, Rxxs, Rxzs = get_obs_data(folder, param)
+        X, Y, Z, R2s, Rgs, Rxxs, Rxzs = get_obs_data(folder, param)
         # ax12.errorbar(kappas, np.array(R2s)/L, yerr=np.array(R2_errs)/L, marker="s", ls="none", ms=ms, mfc="None")
         ax12.plot(kappas, np.array(R2s)/L, marker="s", ls="none", ms=ms, mfc="None", label=fr"${L}$")
 
@@ -174,8 +229,8 @@ def plot_obs_kappa(tex_lw=240.71031, ppi=72):
     # above equation is for R^2
     ax12.set_ylabel(r"$R^2/L$", fontsize=9, labelpad=labelpad)
     ax12.set_xlabel(r"$\kappa$", fontsize=9, labelpad=labelpad)
-    theory_legend = ax12.legend(handles=[line_theory], labels=[r"theory"], loc="upper center", ncol=1, columnspacing=0.5, handlelength=0.5, handletextpad=0.2, frameon=False, fontsize=9)
-    ax12.add_artist(theory_legend)
+    # theory_legend = ax12.legend(handles=[line_theory], labels=[r"theory"], loc="upper center", ncol=1, columnspacing=0.5, handlelength=0.5, handletextpad=0.2, frameon=False, fontsize=9)
+    # ax12.add_artist(theory_legend)
     ax12.legend(title=r"$L$", ncol=1, columnspacing=0.5, handlelength=0.5, handletextpad=0.2, frameon=False, fontsize=9)
 
     ax12.tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=True, labelsize=7)
@@ -200,7 +255,7 @@ def plot_obs_kappa(tex_lw=240.71031, ppi=72):
     for ax in [ax11, ax21, ax12, ax22]:
         ax.text(0.8, 0.1, annotation.pop(0), fontsize=9, transform=ax.transAxes)
 
-    plt.tight_layout(pad=0.05)
+    plt.tight_layout(pad=0.1)
     plt.savefig("./figures/obs_kappa.pdf", format="pdf")
     plt.show()
     plt.close()
@@ -224,18 +279,19 @@ def plot_obs_f(tex_lw=240.71031, ppi=72):
     ms = 3.5
     labelpad = 0.1
     # plot lp vs f
-    folder = "../data/20240807"
+    folder = "../data/20240821"
     L = 200
 
     # plot config for f
     for f in [0.04, 0.12, 0.20, 0.28]:
         ax_plot_config(ax11, "../data/20240730", [100, 10.0, f, 0.00], -10, fr"${f:.2f}$")
-    #for f in [0.08, 0.14, 0.28]:
-        #ax_plot_config(ax11, folder, [200, 10.0, f, 0.00], -10, fr"${f:.2f}$")
+        # ax_plot_config(ax11, folder, [200, 10.0, f, 0.00], -10, fr"${f:.2f}$")
+    # for f in [0.08, 0.14, 0.28]:
+        # ax_plot_config(ax11, folder, [200, 10.0, f, 0.00], -10, fr"${f:.2f}$")
     ax11.view_init(elev=32., azim=-75)
     ax11.quiver(40, 5, 5, 20, 0, 0, color="black", arrow_length_ratio=0.4)
     ax11.text(60, 5, 5, r"$\vu{x}$", fontsize=9)
-    ax11.legend(title=r"$f_t$", loc="lower center", ncol=2, columnspacing=0.5, handlelength=0.5, handletextpad=0.2, frameon=False, fontsize=9)
+    ax11.legend(title=r"$f$", loc="lower center", ncol=2, columnspacing=0.5, handlelength=0.5, handletextpad=0.2, frameon=False, fontsize=9)
     ax11.set_axis_off()
 
     kappas = [10.0]
@@ -248,7 +304,7 @@ def plot_obs_f(tex_lw=240.71031, ppi=72):
         marker = markers[i]
         fs = np.arange(0.00, 0.301, 0.02)
         param = [(L, kappa, f, 0.0) for f in fs]
-        lps, lp_thetas = get_lp_data(folder, param)
+        lps, lp_thetas = get_lp_data_g(folder, param)
         if i == 0:
             ax12.plot(fs, lps, color="tomato", ls="none", marker=marker, ms=ms, mfc="None", label=r"$l_p$")
             ax12.plot(fs, lp_thetas, color="royalblue", ls="none", marker=marker, ms=ms, mfc="None", label=r"$l_{p,\theta}$")
@@ -259,7 +315,7 @@ def plot_obs_f(tex_lw=240.71031, ppi=72):
 
     ax12.legend(title=rf"$\kappa={kappa:.0f}$", ncol=2, columnspacing=0.5, handlelength=0.5, handletextpad=0.2, frameon=False, fontsize=9)
     ax12.set_ylabel(r"$l_p,l_{p,\theta}$", fontsize=9, labelpad=labelpad)
-    ax12.set_xlabel(r"$f_t$", fontsize=9, labelpad=labelpad)
+    ax12.set_xlabel(r"$f$", fontsize=9, labelpad=labelpad)
     ax12.tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=True, labelsize=7)
 
     ax12.xaxis.set_major_locator(plt.MultipleLocator(0.2))
@@ -277,21 +333,25 @@ def plot_obs_f(tex_lw=240.71031, ppi=72):
         ls = "None"
         fs = np.arange(0.00, 0.301, 0.02)
         param = [(L, kappa, f, 0.0) for f in fs]
-        X, Y, Z, R2, Rg2, Rxx, Rxz = get_obs_data(folder, param)
+        X, Y, Z, XsignZ, ZsignX, R2, Rg2, Rxx, Rxz = get_obs_data_g(folder, param)
+        X_errs, Y_errs, Z_errs, XsignZ_errs, ZsignX_errs, R2_errs, Rg2_errs, Rxx_errs, Rxz_errs = get_obs_data_err_g(folder, param)
         # ax21.errorbar(fs, R2/L, yerr=R2_err/L, ls=ls, marker=marker, ms=ms, mfc="None", label=fr"${kappa:.0f}$")
-        if (kappa == 5):
-            ax21.plot((X/L+0.25/(1-X/L)**2 - 0.25)/kappa, X/L, "-", color="gray", label="theory")
+        # if (kappa == 5):
+        # ax21.plot((X/L+0.25/(1-X/L)**2 - 0.25)/kappa, X/L, "-", color="gray") #, label="theory")
         ax21.plot((X/L+0.25/(1-X/L)**2 - 0.25)/kappa, X/L, "-", color="gray")
+
         ax21.plot(fs, X/L, ls=ls, marker=marker, ms=ms, mfc="None", label=fr"${kappa:.0f}$")
+        # ax21.errorbar(fs, X/L, yerr=X_errs/L,ls=ls, marker=marker, ms=ms, mfc="None", label=fr"${kappa:.0f}$")
 
         if kappa == 10:
-            # ax14.plot(fs, Rg2/L, ls=ls, marker=marker, ms=ms, mfc="None", label=r"$R_g^2$")
             ax22.plot(fs, Rxx/Rg2, ls=ls, marker=marker, ms=ms, mfc="None", label=r"$xx$")
             ax22.plot(fs, Rxz/Rg2, ls=ls, marker=marker, ms=ms, mfc="None", label=r"$xz$")
+            # ax22.errorbar(fs, Rxx/Rg2, Rxx_errs/Rg2, ls=ls, marker=marker, ms=ms, mfc="None", label=r"$xx$")
+            # ax22.errorbar(fs, Rxz/Rg2, Rxz_errs/Rg2, ls=ls, marker=marker, ms=ms, mfc="None", label=r"$xz$")
 
-    ax21.legend(title=r"$\kappa$", ncol=1, columnspacing=0.5, handlelength=0.5, handletextpad=0.2, frameon=False, fontsize=9)
+    ax21.legend(title=r"$\kappa$", loc="center right", ncol=1, columnspacing=0.5, handlelength=0.5, handletextpad=0.2, frameon=False, fontsize=9)
     ax21.set_ylabel(r"$X/L$", fontsize=9, labelpad=labelpad)
-    ax21.set_xlabel(r"$f_t$", fontsize=9, labelpad=labelpad)
+    ax21.set_xlabel(r"$f$", fontsize=9, labelpad=labelpad)
     ax21.tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=True, labelsize=7)
     # ax21.xaxis.set_major_locator(plt.MultipleLocator(0.2))
     # ax21.xaxis.set_minor_locator(plt.MultipleLocator(0.1))
@@ -301,7 +361,7 @@ def plot_obs_f(tex_lw=240.71031, ppi=72):
     # title=r"$\kappa=10$",
     ax22.legend(title=r"$\mu$", ncol=1, columnspacing=0.5, handlelength=0.5, handletextpad=0.2, frameon=False, fontsize=9)
     ax22.set_ylabel(r"$R_{\mu}/R_g^2$", fontsize=9, labelpad=labelpad)
-    ax22.set_xlabel(r"$f_t$", fontsize=9, labelpad=labelpad)
+    ax22.set_xlabel(r"$f$", fontsize=9, labelpad=labelpad)
     ax22.tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=True, labelsize=7)
 
     ax22.xaxis.set_major_locator(plt.MultipleLocator(0.1))
@@ -317,7 +377,7 @@ def plot_obs_f(tex_lw=240.71031, ppi=72):
         ax = axs[i]
         ax.text(0.82, 0.125, annotation[i], fontsize=9, transform=ax.transAxes)
 
-    plt.tight_layout(pad=0.05)
+    plt.tight_layout(pad=0.1)
     '''
     plt.subplots_adjust(left=0.08,
                     bottom=0.08,
@@ -326,14 +386,14 @@ def plot_obs_f(tex_lw=240.71031, ppi=72):
                     wspace=0.3,
                     hspace=0.3)
     '''
-    plt.subplots_adjust(wspace=0.27)
-    plt.savefig("./figures/obs_ft.pdf", format="pdf")
+    plt.subplots_adjust(wspace=0.3, hspace=0.25)
+    plt.savefig("./figures/obs_f.pdf", format="pdf")
     # plt.subplot_tool()
     plt.show()
     plt.close()
 
 
-def plot_obs_g(tex_lw=240.71031, ppi=72):
+def plot_obs_gamma(tex_lw=240.71031, ppi=72):
 
     fig = plt.figure(figsize=(tex_lw / ppi * 1, tex_lw / ppi * 0.9))
     plt.rc("text", usetex=True)
@@ -350,19 +410,19 @@ def plot_obs_g(tex_lw=240.71031, ppi=72):
     ms = 3.5
     labelpad = 0.1
     # plot lp vs f
-    folder = "../data/20240819"
+    folder = "../data/20240820"
     L = 200
 
     # plot config vs g
     for gL in [0.40, 0.80, 1.20]:
-        ax_plot_config(ax11, "../data/20240730", [100, 10.0, 0.00, gL], -20, fr"${gL:.1f}$")
+        ax_plot_config(ax11, "../data/20240730", [100, 10.0, 0.00, gL], -30, fr"${gL:.1f}$")
     # ax11.view_init(elev=32., azim=-75)
     ax11.quiver(40, 5, 5, 20, 0, 0, color="black", arrow_length_ratio=0.4)
     ax11.text(60, 5, 5, r"$\vu{x}$", fontsize=9)
     ax11.quiver(40, 5, 5, 0, 0, 20, color="black", arrow_length_ratio=0.4)
     ax11.text(40, 5, 25, r"$\vu{z}$", fontsize=9)
 
-    ax11.legend(title=r"$f_sL$", loc="lower center", ncol=2, columnspacing=0.5, handlelength=0.5, handletextpad=0.2, frameon=False, fontsize=9)
+    ax11.legend(title=r"$\gamma L$", loc="lower center", ncol=2, columnspacing=0.5, handlelength=0.5, handletextpad=0.2, frameon=False, fontsize=9)
     ax11.set_axis_off()
 
     # plot lp vs g
@@ -379,7 +439,7 @@ def plot_obs_g(tex_lw=240.71031, ppi=72):
         ls = "none"
         marker = markers[i]
         param = [(L, kappa, f, gL) for gL in gLs]
-        lps, lp_thetas = get_lp_data(folder, param)
+        lps, lp_thetas = get_lp_data_g(folder, param)
         if i == 0:
             ax12.plot(gLs, lps, color="tomato", ls=ls, marker=marker, ms=ms, mfc="None", label=r"$l_p$")
             ax12.plot(gLs, lp_thetas, color="royalblue", ls=ls, marker=marker, ms=ms, mfc="None", label=r"$l_{p,\theta}$")
@@ -388,9 +448,9 @@ def plot_obs_g(tex_lw=240.71031, ppi=72):
             ax12.plot(gLs, lp_thetas, color="royalblue", marker=marker, ls=ls, ms=ms, mfc="None")
         # ax12.text(0, kappa-1.5, fr"$f={f}$", fontsize=9)
 
-    ax12.legend(title=r"$f=0$", ncol=2, columnspacing=0.5, handlelength=0.5, handletextpad=0.2, frameon=False, fontsize=9)
+    ax12.legend(title=rf"$\kappa={kappa:.0f}$", ncol=2, columnspacing=0.5, handlelength=0.5, handletextpad=0.2, frameon=False, fontsize=9)
     ax12.set_ylabel(r"$l_p,l_{p,\theta}$", fontsize=9, labelpad=labelpad)
-    ax12.set_xlabel(r"$f_s L$", fontsize=9, labelpad=labelpad)
+    ax12.set_xlabel(r"$\gamma L$", fontsize=9, labelpad=labelpad)
     ax12.tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=True, labelsize=7)
 
     # ax12.xaxis.set_major_locator(plt.MultipleLocator(0.2))
@@ -399,29 +459,35 @@ def plot_obs_g(tex_lw=240.71031, ppi=72):
     # ax12.yaxis.set_minor_locator(plt.MultipleLocator(1))
     # ax12.set_ylim(2, 13)
 
-    # plot R2 and Rg vs. g  , f is f_t, g is fs = =
-    fs = [0.00, 0.02, 0.04]
-    for i in range(len(fs)):
-        f = fs[i]
-        #ls = lss[i]
+    # plot X/L and Rg vs. g  , f is f_t, g is fs = =
+    fs = [0.00]
+    f = 0.0
+    kappas = [5.0, 10.0]
+    folder = "../data/20240820"
+    for i in range(len(kappas)):
+        # f = fs[i]
+        kappa = kappas[i]
+        # ls = lss[i]
         ls = "None"
         marker = markers[i]
         param = [(L, kappa, f, gL) for gL in gLs]
-        X, Y, Z, R2, Rg2, Rxx, Rxz = get_obs_data(folder, param)
+        # X, Y, Z, R2, Rg2, Rxx, Rxz = get_obs_data(folder, param)
+        X, Y, Z, XsignZ, ZsignX, R2, Rg2, Rxx, Rxz = get_obs_data_g(folder, param)
         # ax23.errorbar(gLs, R2/L, yerr=R2_err/L, ls=ls, marker=marker, ms=ms, mfc="None", label=fr"${f:.1f}$")
         # ax21.plot(gLs, R2/L, ls=ls, marker=marker, ms=ms, mfc="None", label=fr"${f:.1f}$")
-        ax21.plot(gLs, np.abs(X)/L, ls=ls, marker=marker, ms=ms, mfc="None", label=fr"${f:.2f}$")
+        ax21.plot(gLs, XsignZ/L, ls=ls, marker=marker, ms=ms+1, mfc="None", label=rf"${kappa:.0f}$")
+        # ax21.plot(gLs, ZsignX/L, ls=ls, marker="2", ms=ms+2, mfc="None", label=r"$Z\theta(X)$")
         # ax21.plot(gLs, np.abs(Y)/L, ls=ls, marker=marker, ms=ms, mfc="None", label=fr"Y${f:.1f}$")
         # ax21.plot(gLs, np.abs(Z)/L, ls=ls, marker=marker, ms=ms, mfc="None", label=fr"Z${f:.1f}$")
         # ax22.errorbar(gLs, Rg, yerr=Rg_err, ls=ls,  marker=marker, ms=ms, mfc="None", label=fr"${f:.1f}$")
-        if f == 0:
+        if kappa == 10:
             # ax22.plot(gLs, Rg2/L, ls=ls, marker=marker, ms=ms, mfc="None", label=r"$R_g^2$")
             ax22.plot(gLs, Rxx/Rg2, ls=ls, marker=marker, ms=ms, mfc="None", label=r"$xx$")
             ax22.plot(gLs, Rxz/Rg2, ls=ls, marker=marker, ms=ms, mfc="None", label=r"$xz$")
 
-    ax21.legend(title=r"$f$", ncol=1, columnspacing=0.5, handlelength=0.5, handletextpad=0.2, frameon=False, fontsize=9)
-    ax21.set_ylabel(r"$X/L$", fontsize=9, labelpad=labelpad)
-    ax21.set_xlabel(r"$f_sL$", fontsize=9, labelpad=labelpad)
+    ax21.legend(title=r"$\kappa$", ncol=1, columnspacing=0.5, handlelength=0.5, handletextpad=0.2, frameon=False, fontsize=9)
+    ax21.set_ylabel(r"$X\frac{Z}{|Z|}/L$", fontsize=9, labelpad=labelpad)
+    ax21.set_xlabel(r"$\gamma L$", fontsize=9, labelpad=labelpad)
     ax21.tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=True, labelsize=7)
     ax21.xaxis.set_major_locator(plt.MultipleLocator(0.2))
     ax21.xaxis.set_minor_locator(plt.MultipleLocator(0.1))
@@ -430,7 +496,7 @@ def plot_obs_g(tex_lw=240.71031, ppi=72):
     # title=r"$f=0$"
     ax22.legend(title=r"$\mu$", ncol=1, columnspacing=0.5, handlelength=0.5, handletextpad=0.2, frameon=False, fontsize=9)
     ax22.set_ylabel(r"$R_{\mu}/R_g^2$", fontsize=9, labelpad=labelpad)
-    ax22.set_xlabel(r"$f_sL$", fontsize=9, labelpad=labelpad)
+    ax22.set_xlabel(r"$\gamma L$", fontsize=9, labelpad=labelpad)
     ax22.tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=True, labelsize=7)
     # ax22.set_ylim(-0.25,7)
     ax22.xaxis.set_major_locator(plt.MultipleLocator(0.5))
@@ -445,9 +511,279 @@ def plot_obs_g(tex_lw=240.71031, ppi=72):
         ax = axs[i]
         ax.text(0.82, 0.125, annotation[i], fontsize=9, transform=ax.transAxes)
 
-    plt.tight_layout(pad=0.05)
-    plt.subplots_adjust(wspace=0.3)
-    plt.savefig("./figures/obs_fs.pdf", format="pdf")
+    plt.tight_layout(pad=0.1)
+    plt.subplots_adjust(wspace=0.3, hspace=0.25)
+    plt.savefig("./figures/obs_gamma.pdf", format="pdf")
+    plt.show()
+    plt.close()
+
+
+def plot_obs_f_3panel(tex_lw=240.71031, ppi=72):
+    fig = plt.figure(figsize=(tex_lw / ppi * 1, tex_lw / ppi * 0.75))
+    plt.rc("text", usetex=True)
+    plt.rc("text.latex", preamble=r"\usepackage{physics}")
+
+    ax11 = plt.subplot2grid((5, 2), (0, 0), colspan=2, rowspan=2)
+    ax21 = plt.subplot2grid((5, 2), (2, 0), rowspan=3)
+    ax22 = plt.subplot2grid((5, 2), (2, 1), rowspan=3)
+
+    ms = 3.5
+    labelpad = 0.1
+    # plot lp vs f
+    folder = "../data/20240828"
+    L = 200
+    kappa = 10
+    gL = 0.0
+    fs = np.arange(0.00, 0.301, 0.02)
+    fi2plot = [0, 5, 10, 15]
+    xshifts = [0, 100, 150, 175]
+    xshifts = np.cumsum(xshifts)
+    xtextshifts = [0, 150, 300, 475]
+    for i in range(len(fi2plot)):
+        f = fs[fi2plot[i]]
+        finfo = f"L{L}_kappa{kappa:.1f}_f{f:.2f}_gL{gL:.2f}"
+        colors = plt.cm.rainbow(np.linspace(0, 1, 30))
+        for j in range(30):
+            filename = f"{folder}/{finfo}/config_{j}.csv"
+            ax_plot_2dconfig_from_file(ax11, filename, colors[j], 120, 0, xshifts[i], 50)
+        ax11.text(xtextshifts[i]-50, -50, fr"$f={f:.1f}$", fontsize=9)
+
+    alen=40
+    x0,y0=-100,-20
+    ax11.arrow(x0, y0, alen, 0, color="black", lw=1, head_length=alen*0.3, head_width=alen*0.3)  # , overhang=1.0) #, length_includes_head=True)
+    ax11.text(x0+alen, y0+0.1*alen, r"$\vu{x}$", fontsize=9)
+    ax11.arrow(x0, y0, 0, alen, color="black", lw=1, head_length=alen*0.3, head_width=alen*0.3)  # , overhang=1.0) #, length_includes_head=True)
+    ax11.text(x0+0.1*alen, y0+alen, r"$\vu{z}$", fontsize=9)
+
+    ax11.set_axis_off()
+
+    # plot R2 and Rg vs. f
+    kappas = [5.0, 10.0]
+    lss = ['-', "--"]
+    markers = ["s", "o", "v", "d"]
+    for i in range(len(kappas)):
+        kappa = kappas[i]
+        ls = lss[i]
+        marker = markers[i]
+        ls = "None"
+        fs = np.arange(0.00, 0.301, 0.02)
+        param = [(L, kappa, f, 0.0) for f in fs]
+        X, Y, Z, XsignZ, ZsignX, R2, Rg2, Rxx, Rxz = get_obs_data_g(folder, param)
+        X_errs, Y_errs, Z_errs, XsignZ_errs, ZsignX_errs, R2_errs, Rg2_errs, Rxx_errs, Rxz_errs = get_obs_data_err_g(folder, param)
+        # ax21.errorbar(fs, R2/L, yerr=R2_err/L, ls=ls, marker=marker, ms=ms, mfc="None", label=fr"${kappa:.0f}$")
+        # if (kappa == 5):
+        # ax21.plot((X/L+0.25/(1-X/L)**2 - 0.25)/kappa, X/L, "-", color="gray") #, label="theory")
+        ax21.plot((X/L+0.25/(1-X/L)**2 - 0.25)/kappa, X/L, "-", color="gray")
+
+        ax21.plot(fs, X/L, ls=ls, marker=marker, ms=ms, mfc="None", label=fr"${kappa:.0f}$")
+        # ax21.errorbar(fs, X/L, yerr=X_errs/L,ls=ls, marker=marker, ms=ms, mfc="None", label=fr"${kappa:.0f}$")
+
+        if kappa == 10:
+            ax22.plot(fs, Rxx/Rg2, ls=ls, marker=marker, ms=ms, mfc="None", label=r"$xx$")
+            ax22.plot(fs, Rxz/Rg2, ls=ls, marker=marker, ms=ms, mfc="None", label=r"$xz$")
+            # ax22.errorbar(fs, Rxx/Rg2, Rxx_errs/Rg2, ls=ls, marker=marker, ms=ms, mfc="None", label=r"$xx$")
+            # ax22.errorbar(fs, Rxz/Rg2, Rxz_errs/Rg2, ls=ls, marker=marker, ms=ms, mfc="None", label=r"$xz$")
+
+    ax21.legend(title=r"$\kappa$", loc="center right", ncol=1, columnspacing=0.5, handlelength=0.5, handletextpad=0.2, frameon=False, fontsize=9)
+    ax21.set_ylabel(r"$X/L$", fontsize=9, labelpad=labelpad)
+    ax21.set_xlabel(r"$f$", fontsize=9, labelpad=labelpad)
+    ax21.tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=True, labelsize=7)
+    ax21.xaxis.set_major_locator(plt.MultipleLocator(0.1))
+    ax21.xaxis.set_minor_locator(plt.MultipleLocator(0.05))
+    ax21.yaxis.set_major_locator(plt.MultipleLocator(0.2))
+    ax21.yaxis.set_minor_locator(plt.MultipleLocator(0.1))
+
+    # title=r"$\kappa=10$",
+    ax22.legend(title=r"$\mu$", ncol=1, columnspacing=0.5, handlelength=0.5, handletextpad=0.2, frameon=False, fontsize=9)
+    ax22.set_ylabel(r"$R_{\mu}/R_g^2$", fontsize=9, labelpad=labelpad)
+    ax22.set_xlabel(r"$f$", fontsize=9, labelpad=labelpad)
+    ax22.tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=True, labelsize=7)
+
+    ax22.xaxis.set_major_locator(plt.MultipleLocator(0.1))
+    ax22.xaxis.set_minor_locator(plt.MultipleLocator(0.05))
+    ax22.yaxis.set_major_locator(plt.MultipleLocator(0.2))
+    ax22.yaxis.set_minor_locator(plt.MultipleLocator(0.1))
+    # ax14.set_ylim(-0.25,6)
+
+    ax11.text(0.91, 0.0, r"$(a)$", fontsize=9, transform=ax11.transAxes)
+    ax21.text(0.82, 0.125, r"$(b)$", fontsize=9, transform=ax21.transAxes)
+    ax22.text(0.82, 0.125, r"$(c)$", fontsize=9, transform=ax22.transAxes)
+    #ax11.set_rasterized(True)
+    #ax21.set_rasterized(True)
+    #ax22.set_rasterized(True)
+    plt.tight_layout(pad=0.1)
+
+    plt.subplots_adjust(wspace=0.3, hspace=0.25)
+    plt.savefig("./figures/obs_f_3panel.pdf", format="pdf", dpi=300)
+    plt.show()
+    plt.close()
+
+
+def plot_obs_gamma_3panel(tex_lw=240.71031, ppi=72):
+
+    fig = plt.figure(figsize=(tex_lw / ppi * 1, tex_lw / ppi * 0.75))
+    plt.rc("text", usetex=True)
+    plt.rc("text.latex", preamble=r"\usepackage{physics}")
+
+    ax11 = plt.subplot2grid((5, 2), (0, 0), colspan=2, rowspan=2)
+    ax21 = plt.subplot2grid((5, 2), (2, 0), rowspan=3)
+    ax22 = plt.subplot2grid((5, 2), (2, 1), rowspan=3)
+
+    # ax11_2d = plt.subplot2grid((5, 2), (0, 0), colspan=2)
+    # ax11_2d.set_axis_off()
+
+    ms = 3.5
+    labelpad = 0.1
+    # plot lp vs f
+    folder = "../data/20240820"
+    L = 200
+    gLs = np.arange(0.00, 1.501, 0.10)
+    f = 0.0
+    kappa = 10.0
+
+    xlim = 120
+    xshift = 220
+    gLi2plot = [0, 3, 9, 15]
+    for i in range(len(gLi2plot)):
+        gL = gLs[gLi2plot[i]]
+        finfo = f"L{L}_kappa{kappa:.1f}_f{f:.2f}_gL{gL:.2f}"
+        colors = plt.cm.rainbow(np.linspace(0, 1, 30))
+        for j in range(30):
+            filename = f"{folder}/{finfo}/config_{j}.csv"
+            ax_plot_2dconfig_from_file(ax11, filename, colors[j], xlim, 1, i*xshift, 50)
+        ax11.text(i*xshift-100, -100, fr"$\gamma L={gL:.1f}$", fontsize=9)
+
+    alen=40
+    x0,y0=-100,-50
+    ax11.arrow(x0, y0, alen, 0, color="black", lw=1, head_length=alen*0.3, head_width=alen*0.3)  # , overhang=1.0) #, length_includes_head=True)
+    ax11.text(x0+alen, y0+0.1*alen, r"$\vu{x}$", fontsize=9)
+    ax11.arrow(x0, y0, 0, alen, color="black", lw=1, head_length=alen*0.3, head_width=alen*0.3)  # , overhang=1.0) #, length_includes_head=True)
+    ax11.text(x0+0.1*alen, y0+alen, r"$\vu{z}$", fontsize=9)
+
+    ax11.set_axis_off()
+
+    lss = ['-', "--"]
+    markers = ["s", "o", "v", "d"]
+    color = ["tomato", "royalblue"]
+    # plot X/L and Rg vs. g  , f is f_t, g is fs = =
+    f = 0.0
+    kappas = [5.0, 10.0]
+    folder = "../data/20240820"
+    for i in range(len(kappas)):
+        kappa = kappas[i]
+        ls = "None"
+        marker = markers[i]
+        param = [(L, kappa, f, gL) for gL in gLs]
+        X, Y, Z, XsignZ, ZsignX, R2, Rg2, Rxx, Rxz = get_obs_data_g(folder, param)
+        ax21.plot(gLs, XsignZ/L, ls=ls, marker=marker, ms=ms+1, mfc="None", label=rf"${kappa:.0f}$")
+        if kappa == 10:
+            # ax22.plot(gLs, Rg2/L, ls=ls, marker=marker, ms=ms, mfc="None", label=r"$R_g^2$")
+            ax22.plot(gLs, Rxx/Rg2, ls=ls, marker=marker, ms=ms, mfc="None", label=r"$xx$")
+            ax22.plot(gLs, Rxz/Rg2, ls=ls, marker=marker, ms=ms, mfc="None", label=r"$xz$")
+
+    ax21.legend(title=r"$\kappa$", ncol=1, columnspacing=0.5, handlelength=0.5, handletextpad=0.2, frameon=False, fontsize=9)
+    ax21.set_ylabel(r"$X\frac{Z}{|Z|}/L$", fontsize=9, labelpad=labelpad)
+    ax21.set_xlabel(r"$\gamma L$", fontsize=9, labelpad=labelpad)
+    ax21.tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=True, labelsize=7)
+    ax21.xaxis.set_major_locator(plt.MultipleLocator(0.5))
+    ax21.xaxis.set_minor_locator(plt.MultipleLocator(0.25))
+    ax21.yaxis.set_major_locator(plt.MultipleLocator(0.2))
+    ax21.yaxis.set_minor_locator(plt.MultipleLocator(0.1))
+    # title=r"$f=0$"
+    ax22.legend(title=r"$\mu$", ncol=1, columnspacing=0.5, handlelength=0.5, handletextpad=0.2, frameon=False, fontsize=9)
+    ax22.set_ylabel(r"$R_{\mu}/R_g^2$", fontsize=9, labelpad=labelpad)
+    ax22.set_xlabel(r"$\gamma L$", fontsize=9, labelpad=labelpad)
+    ax22.tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=True, labelsize=7)
+    # ax22.set_ylim(-0.25,7)
+    ax22.xaxis.set_major_locator(plt.MultipleLocator(0.5))
+    ax22.xaxis.set_minor_locator(plt.MultipleLocator(0.25))
+    ax22.yaxis.set_major_locator(plt.MultipleLocator(0.2))
+    ax22.yaxis.set_minor_locator(plt.MultipleLocator(0.1))
+
+    ax11.text(0.91, 0.125, r"$(a)$", fontsize=9, transform=ax11.transAxes)
+    ax21.text(0.82, 0.125, r"$(b)$", fontsize=9, transform=ax21.transAxes)
+    ax22.text(0.82, 0.125, r"$(c)$", fontsize=9, transform=ax22.transAxes)
+    #ax11.set_rasterized(True)
+    #ax21.set_rasterized(True)
+    #ax22.set_rasterized(True)
+
+    plt.tight_layout(pad=0.1)
+    plt.subplots_adjust(wspace=0.3, hspace=0.25)
+    plt.savefig("./figures/obs_gamma_3panel.pdf", format="pdf", dpi=300)
+    plt.show()
+    plt.close()
+
+
+def plot_TOC(tex_lw=240.71031, ppi=72):
+    cm = 1/2.54
+    # fig = plt.figure(figsize=(9*cm, 3.5*cm))
+    fig = plt.figure(figsize=(8*cm, 4*cm))
+    plt.rc("text", usetex=True)
+    plt.rc("text.latex", preamble=r"\usepackage{physics}")
+
+    ax = fig.add_subplot(111)
+    ms = 3.5
+    labelpad = 0.1
+    # plot lp vs f
+    folder = "../data/20240820"
+    L = 200
+    f = 0.0
+    kappa = 10.0
+    gLs = np.arange(0.00, 1.501, 0.10)
+    folder = "../data/20240820"
+    param = [(L, kappa, f, gL) for gL in gLs]
+    X, Y, Z, XsignZ, ZsignX, R2, Rg2, Rxx, Rxz = get_obs_data_g(folder, param)
+    ax.plot(gLs, XsignZ/L, "o-", lw=1, mfc="None", zorder=10)
+    ax.set_ylabel(r"$X\frac{Z}{|Z|}/L$", fontsize=10, labelpad=labelpad)
+    ax.set_xlabel(r"$\gamma L$ (Shear)", fontsize=10, labelpad=labelpad)
+    ax.tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=True, labelsize=8)
+    ax.xaxis.set_major_locator(plt.MultipleLocator(0.2))
+    ax.xaxis.set_minor_locator(plt.MultipleLocator(0.1))
+    ax.yaxis.set_major_locator(plt.MultipleLocator(0.2))
+    ax.yaxis.set_minor_locator(plt.MultipleLocator(0.1))
+
+    # plot config
+    # g=0
+    xlim = 130
+    gL = 0.
+    inset_size = 0.5
+    inset_axs = []  # [ax1, ax2, ax3]
+    inset_axs_pos = [[0.0, 0.37], [0.3, 0.35], [0.6, 0.35]]
+    inset_axs_abs_pos = [[0.1, 0.2], [0.6, 0.22], [1.3, 0.3]]
+    gLi2plot = [0, 4, 12]
+    for i in range(len(gLi2plot)):
+        gL = gLs[gLi2plot[i]]
+        XsignZp = XsignZ[gLi2plot[i]]
+        inset_axs.append(fig.add_axes([inset_axs_pos[i][0], inset_axs_pos[i][1], inset_size, inset_size]))
+        ax.annotate(" ", xytext=inset_axs_abs_pos[i], xy=[gL, XsignZp/L], arrowprops=dict(arrowstyle="->", lw=1, color="gray"), annotation_clip=False)
+        finfo = f"L{L}_kappa{kappa:.1f}_f{f:.2f}_gL{gL:.2f}"
+        colors = plt.cm.rainbow(np.linspace(0, 1, 30))
+        for j in range(30):
+            filename = f"{folder}/{finfo}/config_{j}.csv"
+            ax_plot_2dconfig_from_file(inset_axs[i], filename, colors[j], xlim)
+        inset_axs[i].set_axis_off()
+        inset_axs[i].set_xlim(-xlim, xlim)
+        inset_axs[i].set_ylim(-xlim, xlim)
+        # inset_ax1 = ax.inset_axes([-0.2, 0.25, inset_size, inset_size], projection='3d')
+        # inset_ax1 = ax.inset_axes([0.1, 0.25, inset_size, inset_size])
+    # inset_ax1 = fig.add_axes([.0, .35, inset_size, inset_size])
+    # inset_ax1.text(0.1, 0.9, rf"$f_sL={gL:.1f}$", fontsize=9, transform=inset_ax1.transAxes)
+    # ax.annotate(" ", xytext=(0.0, 0.35), xy=[gLs[0], XsignZ[0]/L], arrowprops=dict(arrowstyle="->", lw=1, color="gray"), annotation_clip=False)
+
+    # inset_ax1.view_init(elev=32., azim=-60)
+
+    inset_axs[2].arrow(xlim*0.3, -xlim*0.5, xlim*0.5, 0, color="black", lw=1, head_length=xlim*0.1, head_width=xlim*0.1)  # , overhang=1.0) #, length_includes_head=True)
+    inset_axs[2].text(xlim*0.8, -xlim*0.4, r"$\vu{x}$", fontsize=9)
+    inset_axs[2].arrow(xlim*0.3, -xlim*0.5, 0, xlim*0.5, color="black", lw=1, head_length=xlim*0.1, head_width=xlim*0.1)  # , overhang=1.0) #, length_includes_head=True)
+    inset_axs[2].text(xlim*0.4, 0, r"$\vu{z}$", fontsize=9)
+
+    # inset_ax3.view_init(elev=32., azim=-60)
+    #inset_axs[0].set_rasterized(True)
+    #inset_axs[1].set_rasterized(True)
+    #inset_axs[2].set_rasterized(True)
+
+    plt.tight_layout(pad=0.1)
+    plt.savefig("./figures/obs_TOC.pdf", format="pdf", dpi=300)
     plt.show()
     plt.close()
 

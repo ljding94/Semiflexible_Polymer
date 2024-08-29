@@ -33,6 +33,7 @@ struct observable
     double Sxx, Syy, Szz, Sxy, Sxz, Syz; // gyration tensor components
 
     std::vector<double> Sq{};  // structure factor
+    std::vector<std::vector<double>> Sq2D{};  // structure factor
     std::vector<double> qB{};  // qB for Sq, B is the bead-bead distance, which is 1 in our unit
     std::vector<double> tts{}; // tangent-tangent correlation function, versus contour distance
     std::vector<double> spB{}; // s/B for tts calculation
@@ -82,6 +83,7 @@ public:
     observable measure_observable(int bin_num);
     // pair distribution function
     std::vector<double> calc_structure_factor(std::vector<double> qB);          // structure factor of the polymer, orientational averaged: ref: Pedersen 1996 equ 1
+    std::vector<std::vector<double>> calc_structure_factor_2d(std::vector<double> qB);
     std::vector<double> calc_rod_structure_factor(std::vector<double> qB);      // calculate the structure factor of a rod
     std::vector<double> calc_tangent_pair_correlation(std::vector<double> spB); // calculate the pair tangent correlation distribution function
     std::vector<double> calc_gyration_tensor();                                 // calculate the gyration tensor

@@ -43,7 +43,7 @@ int main(int argc, char const *argv[])
         if(argc == 7)
         {
             // local run
-            bin_num = 50;
+            bin_num = 51;
             therm_sweeps = 1500;
             MC_sweeps = 3000;
             step_per_sweep = L*L; //  note: 10L^2 * (1000+1000+2000) for L1000 take 400s
@@ -52,9 +52,9 @@ int main(int argc, char const *argv[])
             std::cout << "running on local machine\n";
             folder = "../data/scratch_local/" + today;
         } else {
-            bin_num = 50;
-            therm_sweeps = 2000;
-            MC_sweeps = 4000;
+            bin_num = 51;
+            therm_sweeps = 1500;
+            MC_sweeps = 3000;
             step_per_sweep = L*L;
             // running on cluster
             std::cout << "running on cluster\n";

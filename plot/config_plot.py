@@ -1,9 +1,10 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib.patches as mpatches
+import random
 
 
-def ax_plot_config(ax, folder, param, zlim_shift,label):
+def ax_plot_config(ax, folder, param, zlim_shift, label):
     L, kappa, f, gL = param
     finfo = f"L{L}_kappa{kappa:.1f}_f{f:.2f}_gL{gL:.2f}"
     filename = f"{folder}/config_{finfo}.csv"
@@ -11,20 +12,50 @@ def ax_plot_config(ax, folder, param, zlim_shift,label):
     x, y, z = data[:, 0], data[:, 1], data[:, 2]
     # tx, ty, tz = data[:, 3], data[:, 4], data[:, 5]
     ax.plot(x, y, z, "-", lw=2, label=label)
-    #y_min = np.min(y)
-    #y_max = np.max(y)
+    # y_min = np.min(y)
+    # y_max = np.max(y)
 
-    #for i in range(len(x)-1):
-        #alpha_xz = 0.8*(y[i]-y_min+0.01)/(y_max-y_min+0.01)+0.1
-        #ax.plot([x[i], x[i+1]], [z[i], z[i+1]], "-", alpha=alpha_xz, color=color, lw=1, label=label)
+    # for i in range(len(x)-1):
+    # alpha_xz = 0.8*(y[i]-y_min+0.01)/(y_max-y_min+0.01)+0.1
+    # ax.plot([x[i], x[i+1]], [z[i], z[i+1]], "-", alpha=alpha_xz, color=color, lw=1, label=label)
 
-    #ax.set_xlim(np.min(x)-1, np.max(x)+1)
+    # ax.set_xlim(np.min(x)-1, np.max(x)+1)
     ax.set_ylim(np.min(y)-1, np.max(y)+1)
     ax.set_zlim(np.min(z)-1+zlim_shift, np.max(z)+1)
     ax.set_xlabel(r"$x$")
     ax.set_ylabel(r"$y$")
     ax.set_zlabel(r"$z$")
     ax.set_aspect("equal")
+
+
+def ax_plot_2dconfig_from_file(ax, filename, color, xlim, flip=1, xshift=0, yshift=0):
+    data = np.genfromtxt(filename, delimiter=',', skip_header=1)
+    x, y, z = data[:, 0], data[:, 1], data[:, 2]
+    if (-xlim > np.min(x) or xlim < np.max(x)):
+        print("np.min(x), np.max(x)", np.min(x), np.max(x))
+    if (-xlim > np.min(y) or xlim < np.max(y)):
+        print("np.min(y), np.max(y)", np.min(y), np.max(y))
+    if (-xlim > np.min(z) or xlim < np.max(z)):
+        print("np.min(z), np.max(z)", np.min(z), np.max(z))
+
+    if (flip and random.random() < 0.5):
+        x, z = -x, -z
+
+    ymin = np.min(y)
+    ymax = np.max(y)
+    # ax.plot([x[0], x[1]], [z[0], z[1]], "-", alpha=0.8*(y[0]-ymin)/(ymax-ymin)+0.1, lw=1)
+    # color = plt.gca().lines[-1].get_color()
+    # color = (np.random.random(), np.random.random(), np.random.random())
+    X, Y, Z = x[-1], y[-1], z[-1]
+    R = np.sqrt(X**2 + Y**2 + Z**2)
+    color = (0.4*X/R+0.6, (0.4*Y/R+0.6)*1.0, 0.4*Z/R+0.6)
+    for i in range(len(x)-1):
+        ax.plot([x[i]+xshift, x[i+1]+xshift], [z[i] + yshift, z[i+1]+yshift], "-", alpha=0.6*(y[i]-ymin)/(ymax-ymin)+0.2, color=color, lw=1, solid_capstyle='round', rasterized=True)
+    # ax.set_xlim(-xlim, xlim)
+    # ax.set_ylim(-xlim, xlim)
+    # ax.set_zlim(-xlim, xlim)
+    ax.set_aspect("equal")
+    # ax.set_axis_off()
 
 
 def ax_plot_config_xz(ax, filename, color="black"):
@@ -113,7 +144,7 @@ def ax_plot_tan_rot_update(ax, yshift=-4):
     xcorr = -0.05
     zcorr = -0.1
     ax.annotate(r"$k$", xy=(x[k]+xcorr, z[k]+zcorr), fontsize=9)
-    #ax.annotate(r"$k'$", xy=(x[k+1]+xcorr, z[k+1]+zcorr), fontsize=9)
+    # ax.annotate(r"$k'$", xy=(x[k+1]+xcorr, z[k+1]+zcorr), fontsize=9)
 
     # ax.set_xlim(-0.5,6)
     # ax.set_ylim(-1.5,2)
