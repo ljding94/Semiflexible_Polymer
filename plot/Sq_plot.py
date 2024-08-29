@@ -111,30 +111,63 @@ def plot_Sq(tex_lw=240.71031, ppi=72):
     plt.close()
 
 
-def get_Sq2D_data(filename):
-    data = np.genfromtxt(filename, delimiter=',', skip_header=1)
-    qB = data[2, 21:]
-    Sq2D = data[6:, 21:]
+def get_Sq2D_data(filename, CS=False):
+    if CS:
+        data = np.genfromtxt(filename, delimiter=',', skip_header=0)
+        qB = np.linspace(-0.4*np.pi, 0.4*np.pi, 51)
+        Sq2D = data[:,:]
+    else:
+        data = np.genfromtxt(filename, delimiter=',', skip_header=1)
+        qB = data[2, 21:]
+        Sq2D = data[6:, 21:]
     return np.array(Sq2D), np.array(qB)
 
 
 def plot_Sq2D(tex_lw=240.71031, ppi=72):
-    fig = plt.figure(figsize=(tex_lw / ppi * 1, tex_lw / ppi * 0.5))
+    fig = plt.figure(figsize=(tex_lw / ppi * 1, tex_lw / ppi * 0.45))
     plt.rc("text", usetex=True)
     plt.rc("text.latex", preamble=r"\usepackage{physics}")
     ax00 = plt.subplot2grid((1, 2), (0, 0))
     ax01 = plt.subplot2grid((1, 2), (0, 1))
 
-    # off-lattice model
-    Sq2D, qB = get_Sq2D_data("../data/scratch_local/20240829/obs_L5_kappa1_f0.0_gL0.0.csv")
-    print("qB.shape",qB.shape)
-    print("qB",qB)
+    # on-lattice model
+    Sq2D, qB = get_Sq2D_data("../data/scratch_local/20240829/L_200_kappa_10_SC.csv", True)
     print("Sq2D.shape",Sq2D.shape)
+    print("qB.shape",qB.shape)
     qBx, qBy = np.meshgrid(qB, qB)
-    ax01.contourf(qBx, qBy, Sq2D, levels=100, cmap="jet")
-    ax01.set_xlabel(r"$Q_xB$", fontsize=9)
-    ax01.set_ylabel(r"$Q_yB$", fontsize=9)
+    print(np.min(Sq2D), np.max(Sq2D))
+    ax00.pcolormesh(qBx, qBy, np.log10(Sq2D), vmax=0, vmin=-3, cmap="rainbow", shading='gouraud')
+    ax00.contour(qBx, qBy, np.log10(Sq2D), vmax=0, vmin=-6, levels=np.linspace(-4, 0, 8), colors="white", linewidths=1, linestyle=":")
+    #ax00.pcolormesh(qqx*N_backbone,qqy*N_backbone,np.log(S_q_2D_list[1,:,:,0]).T, vmax=0,vmin=-6, shading='gouraud')
+    ax00.set_xlabel(r"$Q_xB$", fontsize=9, labelpad=-0.0)
+    ax00.set_ylabel(r"$Q_yB$", fontsize=9, labelpad=-1)
+    ax00.tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=True, labelsize=7)
+    ax00.xaxis.set_major_locator(plt.MultipleLocator(0.5))
+    ax00.xaxis.set_minor_locator(plt.MultipleLocator(0.25))
+    ax00.yaxis.set_major_locator(plt.MultipleLocator(0.5))
+    ax00.yaxis.set_minor_locator(plt.MultipleLocator(0.25))
+
+    # off-lattice model
+    Sq2D, qB = get_Sq2D_data("../data/scratch_local/20240829/obs_L20_kappa1.0_f0.0_gL0.0.csv")
+    qBx, qBy = np.meshgrid(qB, qB)
+    #ax01.contourf(qBx, qBy, Sq2D, levels=20, cmap="jet", norm="log")
+    print(np.min(Sq2D), np.max(Sq2D))
+    ax01.pcolormesh(qBx, qBy, np.log10(Sq2D), vmax=0, vmin=-3, cmap="rainbow", shading='gouraud')
+    #ax01.pcolormesh(qBx, qBy, Sq2D, cmap="rainbow", shading='gouraud')
+    ax01.contour(qBx, qBy, np.log10(Sq2D), vmax=0, vmin=-6, levels=np.linspace(-4, 0, 8), colors="white", linewidths=1, linestyle=":")
+    ax01.set_xlabel(r"$Q_xB$", fontsize=9, labelpad=-0.0)
+    ax01.set_ylabel(r"$Q_yB$", fontsize=9, labelpad=-1)
+    ax01.tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=True, labelsize=7)
+    #ax01.xaxis.set_major_locator(plt.MultipleLocator(0.5))
+    #ax01.xaxis.set_minor_locator(plt.MultipleLocator(0.25))
+    #ax01.yaxis.set_major_locator(plt.MultipleLocator(0.5))
+    #ax01.yaxis.set_minor_locator(plt.MultipleLocator(0.25))
+
+    ax00.text(0.8, 0.15, r"$(a)$", fontsize=9, transform=ax00.transAxes, color='white')
+    ax01.text(0.8, 0.15, r"$(b)$", fontsize=9, transform=ax01.transAxes, color='white')
+
     plt.tight_layout(pad=0.1)
+    plt.subplots_adjust(wspace=0.35)
     plt.savefig("./figures/Sq2D.pdf", format="pdf")
     plt.savefig("./figures/Sq2D.png", format="png", dpi=300)
     plt.show()

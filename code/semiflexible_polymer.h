@@ -103,5 +103,8 @@ public:
     double calc_bending_of_two_t(std::vector<double> t1, std::vector<double> t2);    // calculate the bending angle between two tangent
 
     std::vector<double> Rodrigues_rotation(std::vector<double> v, std::vector<double> k, double theta); // v rotate around k by theta
+
+    double BesselJ0(double x); // Bessel function J0(x)
+
 };
 #endif

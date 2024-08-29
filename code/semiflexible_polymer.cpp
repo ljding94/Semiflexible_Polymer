@@ -766,6 +766,7 @@ std::vector<std::vector<double>> semiflexible_polymer::calc_structure_factor_2d(
     }
     int N = R_all.size(); // total number of scattering points
     std::vector<double> r{0, 0, 0};
+    double r2d = 0;
     double qx, qy, SqB_Re_buff, SqB_Im_buff;
     std::vector<std::vector<double>> SqB(bin_num, std::vector<double>(bin_num, 1.0 / N)); // initialize with 1 due to self overlaping term (see S.H. Chen 1986 eq 18)
     std::vector<std::vector<double>> SqB_Re(bin_num, std::vector<double>(bin_num, 0));    // real part
@@ -777,6 +778,7 @@ std::vector<std::vector<double>> semiflexible_polymer::calc_structure_factor_2d(
             r[0] = R_all[j][0] - R_all[i][0];
             r[1] = R_all[j][1] - R_all[i][1];
             r[2] = R_all[j][2] - R_all[i][2];
+            r2d = r[0] * r[0] + r[1] * r[1];
             // calculate S_q
             for (int kx = bin0; kx < bin_num; kx++)
             {
@@ -784,12 +786,18 @@ std::vector<std::vector<double>> semiflexible_polymer::calc_structure_factor_2d(
                 for (int ky = 0; ky < bin_num; ky++)
                 {
                     qy = qB[ky];
-                    SqB_Re_buff = 1.0 / (N*(N-1)) * std::cos(qx * r[0] + qy * r[1]);
-                    SqB_Im_buff = 1.0 / (N*(N-1)) * std::sin(qx * r[0] + qy * r[1]);
+                    SqB_Re_buff = 2.0 / (N * (N - 1)) * std::cos(qx * r[0] + qy * r[1]);
+                    SqB_Im_buff = 2.0 / (N * (N - 1)) * std::sin(qx * r[0] + qy * r[1]);
+                    //  average over all polar orientation
+                    // SqB_Re_buff = 1.0 / (N * (N - 1)) * BesselJ0(std::sqrt(qx * qx * r2d + qy * qy * r2d));
+                    // SqB_Im_buff = SqB_Re_buff;
                     SqB_Re[kx][ky] += SqB_Re_buff;
                     SqB_Im[kx][ky] += SqB_Im_buff;
-                    SqB_Re[2 * bin0 - kx][2 * bin0 - ky] += SqB_Re_buff;
-                    SqB_Im[2 * bin0 - kx][2 * bin0 - ky] += SqB_Im_buff;
+                    if (kx != bin0)
+                    {
+                        SqB_Re[2 * bin0 - kx][2 * bin0 - ky] += SqB_Re_buff;
+                        SqB_Im[2 * bin0 - kx][2 * bin0 - ky] += SqB_Im_buff;
+                    }
                 }
             }
         }
@@ -918,6 +926,19 @@ double semiflexible_polymer::inner_product(std::vector<double> a, std::vector<do
         c += a[j] * b[j];
     }
     return c;
+}
+
+double semiflexible_polymer::BesselJ0(double x)
+{
+    // series expansion for J_0
+    double fct = 1;
+    double sum = 0;
+    for (int k = 0; k < 10; fct *= ++k)
+    {
+        sum += std::pow(-1, k) * std::pow(x / 2, 2 * k) / std::pow(fct, 2);
+        // std::cout << "sum = " << sum << '\n';
+    }
+    return sum;
 }
 
 std::vector<double> semiflexible_polymer::Rodrigues_rotation(std::vector<double> v, std::vector<double> k, double theta)
