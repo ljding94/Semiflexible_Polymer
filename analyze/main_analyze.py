@@ -8,7 +8,7 @@ def main():
     #plot_polymer_config("../data/20240828/config_L200_kappa10.0_f0.00_gL0.00.csv", "", True)
     #plot_R_distribution("../data/20240828/obs_MC_L200_kappa10.0_f0.00_gL0.00.csv")
     #plot_polymer_config("../data/scratch_local/20240829/config_L10_kappa10.0_f0.0_gL0.0.csv", "", True)
-    plot_R_distribution("../data/scratch_local/20240829/obs_MC_L2_kappa1.0_f0.00_gL0.00.csv")
+    plot_R_distribution("../data/scratch_local/20240830/20240830/obs_MC_L200_kappa10.0_f0.00_gL0.00.csv")
     #plot_multi_config("../data/scratch_local/20240829/L2_kappa1.0_f0.0_gL0.0")
     return
     folder = "../data/scratch_local/20240725"

@@ -148,7 +148,8 @@ def plot_Sq2D(tex_lw=240.71031, ppi=72):
     ax00.yaxis.set_minor_locator(plt.MultipleLocator(0.25))
 
     # off-lattice model
-    Sq2D, qB = get_Sq2D_data("../data/scratch_local/20240830/obs_L50_kappa2.0_f0.00_gL0.00.csv")
+    #Sq2D, qB = get_Sq2D_data("../data/scratch_local/20240830/obs_L50_kappa2.0_f0.00_gL0.00.csv")
+    Sq2D, qB = get_Sq2D_data("../data/scratch_local/20240830/obs_L50_kappa5.0_f0.00_gL0.00.csv")
     #Sq2D, qB = get_Sq2D_data("../data/scratch_local/20240829/obs_L200_kappa10.0_f0.00_gL0.00.csv")
     #Sq2D, qB = get_Sq2D_data("../data/20240829/obs_L200_kappa5.0_f0.00_gL0.00.csv")
     qBx, qBy = np.meshgrid(qB, qB)

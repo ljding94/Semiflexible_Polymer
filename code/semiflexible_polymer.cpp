@@ -652,7 +652,7 @@ void semiflexible_polymer::save_observable_to_file(std::string filename, std::ve
                 f << "\nSq2D,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA";
                 for (int ky = 0; ky < obs_ensemble[0].Sq2D[kx].size(); ky++)
                 {
-                    f << "," << obs_ensemble[0].Sq2D[kx][ky];
+                    f << "," << avg_Sq2D[kx][ky];
                 }
             }
         }
@@ -690,8 +690,8 @@ observable semiflexible_polymer::measure_observable(int bin_num)
     obs.Sxz = Sij[4];
     obs.Syz = Sij[5];
 
-    double qB_i = -25.0 / L * M_PI;                // 0.2*M_PI/L; //0.1/L; ;
-    double dqB = 50.0 / L * M_PI / (bin_num - 1); // M_PI;//100.0/L; //M_PI;
+    double qB_i = -50.0 / L * M_PI;                // 0.2*M_PI/L; //0.1/L; ;
+    double dqB = 100.0 / L * M_PI / (bin_num - 1); // M_PI;//100.0/L; //M_PI;
     obs.qB.resize(bin_num);
     for (int k = 0; k < bin_num; k++)
     {
