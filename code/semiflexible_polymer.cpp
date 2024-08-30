@@ -43,11 +43,11 @@ semiflexible_polymer::semiflexible_polymer(double L_, Energy_parameter Epar_, do
     // such that there is no bending the shear energy
     for (int i = 0; i < L; i++)
     {
-        polymer[i].r = {1.0 * i, 0, 0};
-        polymer[i].t = {1.0, 0, 0};
+        polymer[i].r = {0, 0, 1.0 * i};
+        polymer[i].t = {0, 0, 1.0};
         E_sys += -Epar.f * polymer[i].t[0];
     }
-    polymer[L].r = {1.0 * L, 0, 0};
+    polymer[L].r = {0, 0, 1.0 * L};
     polymer[L].t = {0, 0, 0}; // no tangent for the last bead
 
     // above initial configuration give 0 bending and shear energy
@@ -214,7 +214,7 @@ int semiflexible_polymer::update_bead_tangent_rotation(int bead_i)
 
     // 3. rotate every r(ij) towards uni_w for random angle theta such that cos(theta) uniform in [cos d_theta,1]
     // due to the length of rotated polymer, here use d_theta/(L-bead_i), to adjust acceptance rate
-    double d_theta_in_use = (bead_i == 0 && Epar.f == 0 && Epar.g == 0) ? 0.5 * M_PI : d_theta / (1 + (Epar.f + Epar.g) * (L - bead_i));
+    double d_theta_in_use = (bead_i == 0 && Epar.f == 0 && Epar.g == 0) ? d_theta : d_theta / (1 + (Epar.f + Epar.g) * (L - bead_i));
     double cos_theta = 1 - rand_uni(gen) * (1 - std::cos(1.0 * d_theta_in_use));
     double sin_theta = std::sqrt(1 - cos_theta * cos_theta);
     std::vector<double> r_ij(3, 0);
@@ -690,8 +690,8 @@ observable semiflexible_polymer::measure_observable(int bin_num)
     obs.Sxz = Sij[4];
     obs.Syz = Sij[5];
 
-    double qB_i = -0.25 * M_PI;              // 0.2*M_PI/L; //0.1/L; ;
-    double dqB = 0.5 * M_PI / (bin_num - 1); // M_PI;//100.0/L; //M_PI;
+    double qB_i = -25.0 / L * M_PI;                // 0.2*M_PI/L; //0.1/L; ;
+    double dqB = 50.0 / L * M_PI / (bin_num - 1); // M_PI;//100.0/L; //M_PI;
     obs.qB.resize(bin_num);
     for (int k = 0; k < bin_num; k++)
     {
@@ -772,22 +772,18 @@ std::vector<std::vector<double>> semiflexible_polymer::calc_structure_factor_2d(
     }
     int N = R_all.size(); // total number of scattering points
     std::vector<double> r{0, 0, 0};
-    double r2d = 0;
     double qx, qy, SqB_Re_buff, SqB_Im_buff;
     // std::vector<std::vector<double>> SqB(bin_num, std::vector<double>(bin_num, 1.0 / N)); // initialize with 1 due to self overlaping term (see S.H. Chen 1986 eq 18)
-    std::vector<std::vector<double>> SqB(bin_num, std::vector<double>(bin_num, 0.0));          // initialize with 1 due to self overlaping term (see S.H. Chen 1986 eq 18)
+    std::vector<std::vector<double>> SqB(bin_num, std::vector<double>(bin_num, 0.0));    // initialize with 1 due to self overlaping term (see S.H. Chen 1986 eq 18)
     std::vector<std::vector<double>> SqB_Re(bin_num, std::vector<double>(bin_num, 0.0)); // real part
-    std::vector<std::vector<double>> SqB_Im(bin_num, std::vector<double>(bin_num, 0.0));       // imaginary part
-    N = L;
+    std::vector<std::vector<double>> SqB_Im(bin_num, std::vector<double>(bin_num, 0.0)); // imaginary part
+    N = L + 1;
     for (int i = 0; i < N - 1; i++)
     {
         for (int j = i + 1; j < N; j++)
         {
-            //r[0] = R_all[j][0] - R_all[i][0];
-            //r[1] = R_all[j][1] - R_all[i][1];
-            //r[2] = R_all[j][2] - R_all[i][2];
-            r[0] = polymer[j].r[0] - polymer[i].r[0];
-            r[1] = polymer[j].r[1] - polymer[i].r[1];
+            r[0] = polymer[i].r[0] - polymer[j].r[0];
+            r[1] = polymer[i].r[1] - polymer[j].r[1];
             // calculate S_q
             for (int kx = 0; kx < bin_num; kx++)
             {
@@ -796,25 +792,15 @@ std::vector<std::vector<double>> semiflexible_polymer::calc_structure_factor_2d(
                 {
                     qy = qB[ky];
                     SqB_Re_buff = 2.0 / (N * N) * std::cos(qx * r[0] + qy * r[1]);
-                    //SqB_Im_buff = 2.0 / (N * (N - 1)) * std::sin(qx * r[0] + qy * r[1]);
-                    // SqB_Re_buff = 1.0 / (N * N) * std::cos(qx * r[0] + qy * r[1]);
-                    // SqB_Im_buff = 1.0 / (N * N) * std::sin(qx * r[0] + qy * r[1]);
-                    SqB_Im_buff = 0.0;
-                    // SqB_Re_buff += 2.0 / (N * (N - 1)) * std::cos(qx * r[1] + qy * r[2]) /3.0;
-                    // SqB_Im_buff += 2.0 / (N * (N - 1)) * std::sin(qx * r[1] + qy * r[2]) /3.0;
-                    // SqB_Re_buff += 2.0 / (N * (N - 1)) * std::cos(qx * r[2] + qy * r[0]) /3.0;
-                    // SqB_Im_buff += 2.0 / (N * (N - 1)) * std::sin(qx * r[2] + qy * r[0]) /3.0;
                     //   average over all polar orientation
                     // SqB_Re_buff = 1.0 / (N * N) * BesselJ0(std::sqrt(2* (qx * qx + qy * qy) * (r[0] * r[0] + r[1] * r[1])));
 
                     // SqB_Im_buff = SqB_Re_buff;
                     SqB_Re[kx][ky] += SqB_Re_buff;
-                    SqB_Im[kx][ky] += SqB_Im_buff;
 
                     if (ky != bin0)
                     {
                         SqB_Re[2 * bin0 - kx][2 * bin0 - ky] += SqB_Re_buff;
-                        SqB_Im[2 * bin0 - kx][2 * bin0 - ky] += SqB_Im_buff;
                     }
                 }
             }
@@ -826,11 +812,7 @@ std::vector<std::vector<double>> semiflexible_polymer::calc_structure_factor_2d(
     {
         for (int ky = 0; ky < bin_num; ky++)
         {
-            //if (std::abs(SqB_Im[kx][ky]) > 1e-3)
-            //{
-                //std::cout << "Error: SqB_Im[" << kx << "][" << ky << "] is not zero" << std::endl;
-            //}
-            SqB[kx][ky] = (1.0/N + SqB_Re[kx][ky])*(1.0/N + SqB_Re[kx][ky]) ; // * SqB_Re[kx][ky] + SqB_Im[kx][ky] * SqB_Im[kx][ky];
+            SqB[kx][ky] = (1.0 / N + SqB_Re[kx][ky]); // * SqB_Re[kx][ky] + SqB_Im[kx][ky] * SqB_Im[kx][ky];
         }
     }
     return SqB;
@@ -1093,8 +1075,8 @@ void semiflexible_polymer::run_simultion(int therm_sweep, int MC_sweeps, int ste
             bead_i = int(rand_uni(gen) * L); // take between [0,L-1]
             tanrot_acceptance_rate += update_bead_tangent_rotation(bead_i);
         }
-        observable obs = measure_observable(bin_num);
-        obs_ensemble.push_back(obs);
+
+        obs_ensemble.push_back(measure_observable(bin_num));
         if (i % 100 == 0 && save_more_config)
         {
             save_polymer_to_file(folder + "/" + finfo + "/config_" + std::to_string(int(i / 100)) + ".csv");

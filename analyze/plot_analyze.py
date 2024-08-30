@@ -233,15 +233,15 @@ def plot_R_distribution(filename):
     ax = fig.add_subplot(211,projection='3d')
     ax2 = fig.add_subplot(212)
     #ax.plot(X/R, Y/R, Z/R, "o")
-    ax.plot(X/R, Y/R, 0, ".", ms=1)
+    ax.plot(X, Y, 0, ".", ms=1)
     ax.set_aspect("equal")
     ax.set_xlabel("X")
     ax.set_ylabel("Y")
     ax.set_zlabel("Z")
 
-    ax2.hist(X/R, bins=100, histtype="step", label="X")
-    ax2.hist(Y/R, bins=100, histtype="step", label="Y")
-    ax2.hist(Z/R, bins=100, histtype="step", label="Z")
+    ax2.hist(X, bins=100, histtype="step", label="X")
+    ax2.hist(Y, bins=100, histtype="step", label="Y")
+    ax2.hist(Z, bins=100, histtype="step", label="Z")
     ax2.legend()
     #plt.savefig(filename.replace(".csv", ".png"))
     plt.show()
@@ -259,3 +259,14 @@ def plot_multi_config(folder):
     ax.set_aspect("equal")
     plt.show()
     plt.close()
+
+def calc_structure_factor(X, Y, r):
+    Sq = [1.0/n for i in range(len(q))]
+    for k in range(len(q)):
+        Sqk = 0
+        qk = q[k]
+        for i in range(n-1):
+            for j in range(i+1, n):
+                Sqk += 2.0*np.sin(qk*(i-j))/(qk*(i-j))/(n*n)
+        Sq[k] += Sqk
+    return np.array(Sq)
