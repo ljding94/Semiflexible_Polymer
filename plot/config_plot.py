@@ -48,9 +48,14 @@ def ax_plot_2dconfig_from_file(ax, filename, color, xlim, flip=1, xshift=0, yshi
     # color = (np.random.random(), np.random.random(), np.random.random())
     X, Y, Z = x[-1], y[-1], z[-1]
     R = np.sqrt(X**2 + Y**2 + Z**2)
-    color = (0.4*X/R+0.6, (0.4*Y/R+0.6)*1.0, 0.4*Z/R+0.6)
-    for i in range(len(x)-1):
-        ax.plot([x[i]+xshift, x[i+1]+xshift], [z[i] + yshift, z[i+1]+yshift], "-", alpha=0.6*(y[i]-ymin)/(ymax-ymin)+0.2, color=color, lw=1, solid_capstyle='round', rasterized=True)
+    #color = (0.4*X/R+0.6, (0.4*Y/R+0.6)*1.0, 0.4*Z/R+0.6)
+    color =  (np.abs(Z)/R, np.abs(Y)/R, np.abs(X)/R)
+
+    #ax.plot(x+xshift, z+yshift+0.15, "-", color="white", lw=1, solid_capstyle='round') #, rasterized=True)
+    #ax.plot(x+xshift, z+yshift-0.25, "-", color="gray", lw=1, solid_capstyle='round') #, rasterized=True)
+    ax.plot(x+xshift, z+yshift, "-", color=color, lw=0.75, solid_capstyle='round') #, rasterized=True)
+    #for i in range(len(x)-1):
+    #    ax.plot([x[i]+xshift, x[i+1]+xshift], [z[i] + yshift, z[i+1]+yshift], "-", alpha=0.6*(y[i]-ymin)/(ymax-ymin)+0.2, color=color, lw=1, solid_capstyle='round', rasterized=True)
     # ax.set_xlim(-xlim, xlim)
     # ax.set_ylim(-xlim, xlim)
     # ax.set_zlim(-xlim, xlim)

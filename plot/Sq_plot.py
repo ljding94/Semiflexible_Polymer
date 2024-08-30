@@ -114,7 +114,7 @@ def plot_Sq(tex_lw=240.71031, ppi=72):
 def get_Sq2D_data(filename, CS=False):
     if CS:
         data = np.genfromtxt(filename, delimiter=',', skip_header=0)
-        qB = np.linspace(-0.4*np.pi, 0.4*np.pi, 51)
+        qB = np.linspace(-0.25*np.pi, 0.25*np.pi, 51)
         Sq2D = data[:,:]
     else:
         data = np.genfromtxt(filename, delimiter=',', skip_header=1)
@@ -148,12 +148,16 @@ def plot_Sq2D(tex_lw=240.71031, ppi=72):
     ax00.yaxis.set_minor_locator(plt.MultipleLocator(0.25))
 
     # off-lattice model
-    Sq2D, qB = get_Sq2D_data("../data/scratch_local/20240829/obs_L20_kappa1.0_f0.0_gL0.0.csv")
+    Sq2D, qB = get_Sq2D_data("../data/scratch_local/20240829/obs_L40_kappa1.0_f0.0_gL0.0.csv")
+    #Sq2D, qB = get_Sq2D_data("../data/20240829/obs_L200_kappa5.0_f0.00_gL0.00.csv")
     qBx, qBy = np.meshgrid(qB, qB)
+    print("qBx.shape", qBx.shape)
+    Sq2D = Sq2D.T
+    print("Sq2D.shape",Sq2D.shape)
     #ax01.contourf(qBx, qBy, Sq2D, levels=20, cmap="jet", norm="log")
     print(np.min(Sq2D), np.max(Sq2D))
-    ax01.pcolormesh(qBx, qBy, np.log10(Sq2D), vmax=0, vmin=-3, cmap="rainbow", shading='gouraud')
-    #ax01.pcolormesh(qBx, qBy, Sq2D, cmap="rainbow", shading='gouraud')
+    ax01.pcolormesh(qBx, qBy, np.log10(Sq2D), vmax=0, vmin=-6, cmap="rainbow", shading='gouraud')
+    #x01.pcolormesh(qBx, qBy, Sq2D, cmap="rainbow", shading='gouraud')
     ax01.contour(qBx, qBy, np.log10(Sq2D), vmax=0, vmin=-6, levels=np.linspace(-4, 0, 8), colors="white", linewidths=1, linestyle=":")
     ax01.set_xlabel(r"$Q_xB$", fontsize=9, labelpad=-0.0)
     ax01.set_ylabel(r"$Q_yB$", fontsize=9, labelpad=-1)

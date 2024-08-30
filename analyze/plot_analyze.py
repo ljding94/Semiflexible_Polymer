@@ -222,3 +222,40 @@ def ax_fit(x, a):
 def fit_l_persistence(spB, tts):
     popt, pcov = curve_fit(ax_fit, spB, np.log(tts))
     return -1/popt[0]
+
+
+def plot_R_distribution(filename):
+    data = np.genfromtxt(filename, delimiter=',', skip_header=4)
+    X, Y, Z, R = data[:, 2], data[:, 3], data[:, 4], data[:, 7]
+    Rcalc = np.sqrt(X**2 + Y**2 + Z**2)
+    print("R-Rcalc",R-Rcalc)
+    fig = plt.figure(figsize=(5, 5))
+    ax = fig.add_subplot(211,projection='3d')
+    ax2 = fig.add_subplot(212)
+    #ax.plot(X/R, Y/R, Z/R, "o")
+    ax.plot(X/R, Y/R, 0, ".", ms=1)
+    ax.set_aspect("equal")
+    ax.set_xlabel("X")
+    ax.set_ylabel("Y")
+    ax.set_zlabel("Z")
+
+    ax2.hist(X/R, bins=100, histtype="step", label="X")
+    ax2.hist(Y/R, bins=100, histtype="step", label="Y")
+    ax2.hist(Z/R, bins=100, histtype="step", label="Z")
+    ax2.legend()
+    #plt.savefig(filename.replace(".csv", ".png"))
+    plt.show()
+    plt.close()
+
+def plot_multi_config(folder):
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    for i in range(30):
+        data = np.genfromtxt(folder+f"/config_{i}.csv", delimiter=',', skip_header=1)
+        ax.plot(data[:, 0], data[:, 1], data[:, 2], "o-")
+    #ax.set_xlim(-15, 15)
+    #ax.set_ylim(-15, 15)
+    #ax.set_zlim(-15, 15)
+    ax.set_aspect("equal")
+    plt.show()
+    plt.close()

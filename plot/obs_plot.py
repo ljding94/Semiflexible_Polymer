@@ -550,9 +550,9 @@ def plot_obs_f_3panel(tex_lw=240.71031, ppi=72):
 
     alen=40
     x0,y0=-100,-20
-    ax11.arrow(x0, y0, alen, 0, color="black", lw=1, head_length=alen*0.3, head_width=alen*0.3)  # , overhang=1.0) #, length_includes_head=True)
+    ax11.arrow(x0, y0, alen, 0, color=(0,0,1), lw=1, head_length=alen*0.3, head_width=alen*0.3)  # , overhang=1.0) #, length_includes_head=True)
     ax11.text(x0+alen, y0+0.1*alen, r"$\vu{x}$", fontsize=9)
-    ax11.arrow(x0, y0, 0, alen, color="black", lw=1, head_length=alen*0.3, head_width=alen*0.3)  # , overhang=1.0) #, length_includes_head=True)
+    ax11.arrow(x0, y0, 0, alen, color=(1,0,0), lw=1, head_length=alen*0.3, head_width=alen*0.3)  # , overhang=1.0) #, length_includes_head=True)
     ax11.text(x0+0.1*alen, y0+alen, r"$\vu{z}$", fontsize=9)
 
     ax11.set_axis_off()
@@ -655,9 +655,9 @@ def plot_obs_gamma_3panel(tex_lw=240.71031, ppi=72):
 
     alen=40
     x0,y0=-100,-50
-    ax11.arrow(x0, y0, alen, 0, color="black", lw=1, head_length=alen*0.3, head_width=alen*0.3)  # , overhang=1.0) #, length_includes_head=True)
+    ax11.arrow(x0, y0, alen, 0, color=(0,0,1), lw=1, head_length=alen*0.3, head_width=alen*0.3)  # , overhang=1.0) #, length_includes_head=True)
     ax11.text(x0+alen, y0+0.1*alen, r"$\vu{x}$", fontsize=9)
-    ax11.arrow(x0, y0, 0, alen, color="black", lw=1, head_length=alen*0.3, head_width=alen*0.3)  # , overhang=1.0) #, length_includes_head=True)
+    ax11.arrow(x0, y0, 0, alen, color=(1,0,0), lw=1, head_length=alen*0.3, head_width=alen*0.3)  # , overhang=1.0) #, length_includes_head=True)
     ax11.text(x0+0.1*alen, y0+alen, r"$\vu{z}$", fontsize=9)
 
     ax11.set_axis_off()
@@ -772,9 +772,9 @@ def plot_TOC(tex_lw=240.71031, ppi=72):
 
     # inset_ax1.view_init(elev=32., azim=-60)
 
-    inset_axs[2].arrow(xlim*0.3, -xlim*0.5, xlim*0.5, 0, color="black", lw=1, head_length=xlim*0.1, head_width=xlim*0.1)  # , overhang=1.0) #, length_includes_head=True)
+    inset_axs[2].arrow(xlim*0.3, -xlim*0.5, xlim*0.5, 0, color=(0,0,1), lw=1, head_length=xlim*0.1, head_width=xlim*0.1)  # , overhang=1.0) #, length_includes_head=True)
     inset_axs[2].text(xlim*0.8, -xlim*0.4, r"$\vu{x}$", fontsize=9)
-    inset_axs[2].arrow(xlim*0.3, -xlim*0.5, 0, xlim*0.5, color="black", lw=1, head_length=xlim*0.1, head_width=xlim*0.1)  # , overhang=1.0) #, length_includes_head=True)
+    inset_axs[2].arrow(xlim*0.3, -xlim*0.5, 0, xlim*0.5, color=(1,0,0), lw=1, head_length=xlim*0.1, head_width=xlim*0.1)  # , overhang=1.0) #, length_includes_head=True)
     inset_axs[2].text(xlim*0.4, 0, r"$\vu{z}$", fontsize=9)
 
     # inset_ax3.view_init(elev=32., azim=-60)
