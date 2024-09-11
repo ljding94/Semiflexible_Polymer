@@ -115,7 +115,7 @@ def get_Sq2D_data(filename, CS=False):
     if CS:
         data = np.genfromtxt(filename, delimiter=',', skip_header=0)
         qB = np.linspace(-0.25*np.pi, 0.25*np.pi, 51)
-        Sq2D = data[:,:]
+        Sq2D = data[:, :]
     else:
         data = np.genfromtxt(filename, delimiter=',', skip_header=1)
         qB = data[2, 21:]
@@ -168,16 +168,91 @@ def plot_Sq2D(tex_lw=240.71031, ppi=72):
     ax01.set_title("Kratky-Porod", fontsize=9, pad=0.3)
     ax02.set_title("This work", fontsize=9, pad=0.3)
 
-
-
     ax00.text(0.75, 0.15, r"$(a)$", fontsize=9, transform=ax00.transAxes, color='black')
     ax01.text(0.75, 0.15, r"$(b)$", fontsize=9, transform=ax01.transAxes, color='black')
     ax02.text(0.75, 0.15, r"$(c)$", fontsize=9, transform=ax02.transAxes, color='black')
-
 
     plt.tight_layout(pad=0.2)
     plt.subplots_adjust(wspace=0.05)
     plt.savefig("./figures/Sq2D.pdf", format="pdf")
     plt.savefig("./figures/Sq2D.png", format="png", dpi=300)
+    plt.show()
+    plt.close()
+
+
+def plot_Sq2D_kappa(tex_lw=240.71031, ppi=72):
+    fig = plt.figure(figsize=(tex_lw / ppi * 1, tex_lw / ppi * 0.42))
+    plt.rc("text", usetex=True)
+    plt.rc("text.latex", preamble=r"\usepackage{physics}")
+    ax00 = plt.subplot2grid((1, 3), (0, 0))
+    ax01 = plt.subplot2grid((1, 3), (0, 1), sharex=ax00, sharey=ax00)
+    ax02 = plt.subplot2grid((1, 3), (0, 2), sharex=ax00, sharey=ax00)
+
+    axs = [ax00, ax01, ax02]
+    # axs = [ax00]
+    filenames = ["../data/scratch_local/data_pool/obs_L100_kappa5.0_f0.00_gL0.00.csv",
+                 "../data/scratch_local/data_pool/obs_L100_kappa10.0_f0.00_gL0.00.csv",
+                 "../data/scratch_local/data_pool/obs_L100_kappa15.0_f0.00_gL0.00.csv"]
+
+    for i in range(len(axs)):
+        Sq2D, qB = get_Sq2D_data(filenames[i])
+        qBx, qBz = np.meshgrid(qB, qB)
+        print(np.min(Sq2D), np.max(Sq2D))
+        axs[i].pcolormesh(qBx, qBz, np.log10(Sq2D), vmax=0, vmin=-2.5, cmap="rainbow", shading='gouraud')
+        Cs = axs[i].contour(qBx, qBz, np.log10(Sq2D), vmax=0, vmin=-2.5, levels=np.linspace(-2.5, 0, 6), colors="gray", linewidths=0.5, linestyle=":")
+        axs[i].clabel(Cs, Cs.levels, inline=True, fontsize=7, fmt="%1.1f", colors="black")
+        axs[i].set_xlabel(r"$Q_x$", fontsize=9, labelpad=-0.0)
+        axs[i].tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=False, labelsize=7)
+        # axs[i].xaxis.set_major_locator(plt.MultipleLocator(0.5))
+        # axs[i].xaxis.set_minor_locator(plt.MultipleLocator(0.25))
+        # axs[i].yaxis.set_major_locator(plt.MultipleLocator(0.5))
+        # axs[i].yaxis.set_minor_locator(plt.MultipleLocator(0.25))
+        axs[i].set_title(r"$\kappa = $"+f"{[5.0, 10.0, 15.0, 20.0][i]:.0f}", fontsize=9, pad=0.3)
+        axs[i].set_aspect("equal")
+
+    axs[0].set_ylabel(r"$Q_z$", fontsize=9, labelpad=-0.0)
+    axs[0].tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=True, labelsize=7)
+
+    plt.tight_layout(pad=0.2)
+    plt.subplots_adjust(wspace=0.05)
+    plt.savefig("./figures/Sq2D_kappa.pdf", format="pdf")
+    plt.savefig("./figures/Sq2D_kappa.png", format="png", dpi=300)
+    plt.show()
+    plt.close()
+
+def plot_Sq2D_fg(tex_lw=240.71031, ppi=72):
+    fig = plt.figure(figsize=(tex_lw / ppi * 1, tex_lw / ppi * 0.42))
+    plt.rc("text", usetex=True)
+    plt.rc("text.latex", preamble=r"\usepackage{physics}")
+    ax00 = plt.subplot2grid((1, 3), (0, 0))
+    ax01 = plt.subplot2grid((1, 3), (0, 1), sharex=ax00, sharey=ax00)
+    ax02 = plt.subplot2grid((1, 3), (0, 2), sharex=ax00, sharey=ax00)
+
+    axs = [ax00, ax01, ax02]
+    filenames = ["../data/scratch_local/data_pool/obs_L100_kappa5.0_f0.00_gL0.00.csv",
+                 "../data/scratch_local/data_pool/obs_L100_kappa5.0_f0.30_gL0.00.csv",
+                 "../data/scratch_local/data_pool/obs_L100_kappa5.0_f0.00_gL1.00.csv"]
+    for i in range(len(axs)):
+        Sq2D, qB = get_Sq2D_data(filenames[i])
+        qBx, qBz = np.meshgrid(qB, qB)
+        print(np.min(Sq2D), np.max(Sq2D))
+        axs[i].pcolormesh(qBx, qBz, np.log10(Sq2D), vmax=0, vmin=-2.5, cmap="rainbow", shading='gouraud')
+        Cs = axs[i].contour(qBx, qBz, np.log10(Sq2D), vmax=0, vmin=-2.5, levels=np.linspace(-2.5, 0, 6), colors="gray", linewidths=0.5, linestyle=":")
+        axs[i].clabel(Cs, Cs.levels, inline=True, fontsize=7, fmt="%1.1f", colors="black")
+        axs[i].set_xlabel(r"$Q_x$", fontsize=9, labelpad=-0.0)
+        axs[i].tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=False, labelsize=7)
+        # axs[i].xaxis.set_major_locator(plt.MultipleLocator(0.5))
+        # axs[i].xaxis.set_minor_locator(plt.MultipleLocator(0.25))
+        # axs[i].yaxis.set_major_locator(plt.MultipleLocator(0.5))
+        # axs[i].yaxis.set_minor_locator(plt.MultipleLocator(0.25))
+        axs[i].set_title(r"$\kappa = $"+f"{[2.0, 6.0, 10.0][i]:.0f}", fontsize=9, pad=0.3)
+
+    axs[0].set_ylabel(r"$Q_z$", fontsize=9, labelpad=-0.0)
+    axs[0].tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=True, labelsize=7)
+
+    plt.tight_layout(pad=0.2)
+    plt.subplots_adjust(wspace=0.05)
+    # plt.savefig("./figures/Sq2D_kappa.pdf", format="pdf")
+    # plt.savefig("./figures/Sq2D_kappa.png", format="png", dpi=300)
     plt.show()
     plt.close()

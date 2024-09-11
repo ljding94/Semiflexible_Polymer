@@ -4,8 +4,10 @@ from obs_plot import *
 from Sq_plot import *
 
 def main():
+
+    # for model paper
     #plot_config_update_demo()
-    plot_obs_kappa()
+    #plot_obs_kappa()
     #plot_obs_f()
     #plot_obs_gamma()
 
@@ -15,6 +17,11 @@ def main():
     #plot_Sq()
     #plot_Sq2D()
     #plot_TOC()
+
+    # for ML paper
+    plot_Sq2D_kappa()
+
+
 # todo: 1. increas hspace between subplot
 # 2. remove legend for theory line
 # 3. use Q instead of q

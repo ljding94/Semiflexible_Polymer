@@ -41,8 +41,8 @@ int main(int argc, char const *argv[])
     int step_per_sweep;
 
     bin_num = 51;
-    therm_sweeps = 2000;
-    MC_sweeps = 4000;
+    therm_sweeps = 100;
+    MC_sweeps = 200;
     step_per_sweep = L * L;
 
     // polymer.save_polymer_to_file(folder + "/config_" + finfo + "_init.csv");

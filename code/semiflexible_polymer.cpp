@@ -41,14 +41,14 @@ semiflexible_polymer::semiflexible_polymer(double L_, Energy_parameter Epar_, do
 
     // initialize the polymer as straight along x axis,
     // such that there is no bending the shear energy
-    int mid_point = int(L / 2);
+    //int mid_point = int(L / 2);
     for (int i = 0; i < L; i++)
     {
-        polymer[i].r = {0, 0, 1.0 * (i - mid_point)};
+        polymer[i].r = {0, 0, 1.0 * i};
         polymer[i].t = {0, 0, 1.0};
         E_sys += -Epar.f * polymer[i].t[0];
     }
-    polymer[L].r = {0, 0, 1.0 * (L - mid_point)};
+    polymer[L].r = {0, 0, 1.0 * L};
     polymer[L].t = {0, 0, 0}; // no tangent for the last bead
 
     // above initial configuration give 0 bending and shear energy
@@ -361,7 +361,7 @@ int semiflexible_polymer::update_bead_pivot_left(int bead_i)
     double tj_norm = 0;
     // note: txw = v
     // check othorgonal of v,w,t
-    if (std::abs(inner_product(uni_v, uni_w)) > 1e-6 || std::abs(inner_product(uni_v, polymer[bead_i-1].t)) > 1e-6 || std::abs(inner_product(uni_w, polymer[bead_i-1].t)) > 1e-6)
+    if (std::abs(inner_product(uni_v, uni_w)) > 1e-6 || std::abs(inner_product(uni_v, polymer[bead_i - 1].t)) > 1e-6 || std::abs(inner_product(uni_w, polymer[bead_i - 1].t)) > 1e-6)
     {
         std::cout << "Error: uni_v, uni_w, t not orthogonal" << std::endl;
         std::cout << inner_product(uni_v, uni_w) << ":" << inner_product(uni_v, polymer[bead_i].t) << ":" << inner_product(uni_w, polymer[bead_i].t) << std::endl;
@@ -410,7 +410,7 @@ int semiflexible_polymer::update_bead_pivot_left(int bead_i)
     else
     {
         for (int j = 0; j <= bead_i; j++)
-    {
+        {
             polymer[j] = old_beads[j];
         }
         return 0;
@@ -862,11 +862,10 @@ std::vector<std::vector<double>> semiflexible_polymer::calc_structure_factor_2d(
     }
     int N = R_all.size(); // total number of scattering points
     std::vector<double> r{0, 0, 0};
-    double qx, qy, SqB_Re_buff, SqB_Im_buff;
+    double qx, qz, SqB_Re_buff, SqB_Im_buff;
     // std::vector<std::vector<double>> SqB(bin_num, std::vector<double>(bin_num, 1.0 / N)); // initialize with 1 due to self overlaping term (see S.H. Chen 1986 eq 18)
     std::vector<std::vector<double>> SqB(bin_num, std::vector<double>(bin_num, 0.0));    // initialize with 1 due to self overlaping term (see S.H. Chen 1986 eq 18)
     std::vector<std::vector<double>> SqB_Re(bin_num, std::vector<double>(bin_num, 0.0)); // real part
-    std::vector<std::vector<double>> SqB_Im(bin_num, std::vector<double>(bin_num, 0.0)); // imaginary part
     N = L + 1;
     for (int i = 0; i < N - 1; i++)
     {
@@ -874,23 +873,20 @@ std::vector<std::vector<double>> semiflexible_polymer::calc_structure_factor_2d(
         {
             r[0] = polymer[i].r[0] - polymer[j].r[0];
             r[1] = polymer[i].r[1] - polymer[j].r[1];
+            r[2] = polymer[i].r[2] - polymer[j].r[2];
             // calculate S_q
             for (int kx = 0; kx < bin_num; kx++)
             {
                 qx = qB[kx];
-                for (int ky = bin0; ky < bin_num; ky++)
+                for (int kz = bin0; kz < bin_num; kz++)
                 {
-                    qy = qB[ky];
-                    SqB_Re_buff = 2.0 / (N * N) * std::cos(qx * r[0] + qy * r[1]);
-                    //   average over all polar orientation
-                    // SqB_Re_buff = 1.0 / (N * N) * BesselJ0(std::sqrt(2* (qx * qx + qy * qy) * (r[0] * r[0] + r[1] * r[1])));
+                    qz = qB[kz];
+                    SqB_Re_buff = 2.0 / (N * N) * std::cos(qx * r[0] + qz * r[2]);
+                    SqB_Re[kx][kz] += SqB_Re_buff;
 
-                    // SqB_Im_buff = SqB_Re_buff;
-                    SqB_Re[kx][ky] += SqB_Re_buff;
-
-                    if (ky != bin0)
+                    if (kz != bin0)
                     {
-                        SqB_Re[2 * bin0 - kx][2 * bin0 - ky] += SqB_Re_buff;
+                        SqB_Re[2 * bin0 - kx][2 * bin0 - kz] += SqB_Re_buff;
                     }
                 }
             }
@@ -900,9 +896,9 @@ std::vector<std::vector<double>> semiflexible_polymer::calc_structure_factor_2d(
     // calculate SqB
     for (int kx = 0; kx < bin_num; kx++)
     {
-        for (int ky = 0; ky < bin_num; ky++)
+        for (int kz = 0; kz < bin_num; kz++)
         {
-            SqB[kx][ky] = (1.0 / N + SqB_Re[kx][ky]); // * SqB_Re[kx][ky] + SqB_Im[kx][ky] * SqB_Im[kx][ky];
+            SqB[kx][kz] = (1.0 / N + SqB_Re[kx][kz]); // * SqB_Re[kx][ky] + SqB_Im[kx][ky] * SqB_Im[kx][ky];
         }
     }
     return SqB;
@@ -1093,11 +1089,16 @@ double semiflexible_polymer::run_MC_sweep(int step_per_sweep)
 {
     int bead_i, bead_j, bead_ij;
     double acceptance_rate = 0;
-    int mid_point = int(L / 2);
+    // int mid_point = int(L / 2);
     for (int n = 0; n < step_per_sweep; n++)
     {
         bead_ij = 2 + int(rand_uni(gen) * Epar.kappa);   //~[2,L]
-        bead_i = int(rand_uni(gen) * (L - 2 * bead_ij)); // take between [0,mid_poin-bead_ij] and [mid_point,L-bead_ij]
+        bead_i = int(rand_uni(gen) * (L - bead_ij));
+        bead_i += bead_ij;
+        bead_j = bead_i + bead_ij;
+        bead_j = std::min(bead_j, L);
+        /*
+        // take between [0,mid_poin-bead_ij] and [mid_point,L-bead_ij]
         if (bead_i > mid_point - bead_ij)
         {
             bead_i += bead_ij;
@@ -1109,17 +1110,11 @@ double semiflexible_polymer::run_MC_sweep(int step_per_sweep)
             bead_j = bead_i + bead_ij;
             bead_j = std::min(bead_j, mid_point);
         }
+        */
         update_bead_crankshaft(bead_i, bead_j);
 
-        bead_i = int(rand_uni(gen) * L - 1) + 1; // take from [1,L-1]
-        if (bead_i >= mid_point)
-        {
-            update_bead_pivot_right(bead_i);
-        }
-        else
-        {
-            update_bead_pivot_left(bead_i);
-        }
+        bead_i = int(rand_uni(gen) * L); // take from [1,L-1]
+        update_bead_pivot_right(bead_i);
     }
     return acceptance_rate / step_per_sweep;
 }
@@ -1130,7 +1125,6 @@ void semiflexible_polymer::run_simultion(int therm_sweep, int MC_sweeps, int ste
 
     double conrot_acceptance_rate = 0;
     double tanrot_acceptance_rate = 0;
-
 
     beta = 0; // randomization
     for (int i = 0; i < therm_sweep; i++)
