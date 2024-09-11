@@ -41,19 +41,20 @@ semiflexible_polymer::semiflexible_polymer(double L_, Energy_parameter Epar_, do
 
     // initialize the polymer as straight along x axis,
     // such that there is no bending the shear energy
+    int mid_point = int(L / 2);
     for (int i = 0; i < L; i++)
     {
-        polymer[i].r = {0, 0, 1.0 * i};
+        polymer[i].r = {0, 0, 1.0 * (i - mid_point)};
         polymer[i].t = {0, 0, 1.0};
         E_sys += -Epar.f * polymer[i].t[0];
     }
-    polymer[L].r = {0, 0, 1.0 * L};
+    polymer[L].r = {0, 0, 1.0 * (L - mid_point)};
     polymer[L].t = {0, 0, 0}; // no tangent for the last bead
 
     // above initial configuration give 0 bending and shear energy
 }
 
-int semiflexible_polymer::update_bead_concerted_rotation(int bead_i, int bead_j)
+int semiflexible_polymer::update_bead_crankshaft(int bead_i, int bead_j)
 {
     if (bead_i > bead_j)
     {
@@ -162,7 +163,7 @@ int semiflexible_polymer::update_bead_concerted_rotation(int bead_i, int bead_j)
     }
 }
 
-int semiflexible_polymer::update_bead_tangent_rotation(int bead_i)
+int semiflexible_polymer::update_bead_pivot_right(int bead_i)
 {
     std::vector<bead> old_beads{}; // starting with bead_i
     double old_E = 0;
@@ -251,34 +252,6 @@ int semiflexible_polymer::update_bead_tangent_rotation(int bead_i)
         polymer[j].t[0] /= tj_norm;
         polymer[j].t[1] /= tj_norm;
         polymer[j].t[2] /= tj_norm;
-
-        /*
-        // rorate r_ij towards uni_w by theta
-        r_ij = {polymer[j].r[0] - polymer[bead_i].r[0], polymer[j].r[1] - polymer[bead_i].r[1], polymer[j].r[2] - polymer[bead_i].r[2]};
-        r_ij_norm = std::sqrt(r_ij[0] * r_ij[0] + r_ij[1] * r_ij[1] + r_ij[2] * r_ij[2]);
-        r_ij_v = inner_product(r_ij, uni_v);
-        r_ij_w = inner_product(r_ij, uni_w);
-        r_ij_t = inner_product(r_ij, polymer[bead_i].t);
-
-        r_ij = {(cos_theta * r_ij_t - sin_theta * r_ij_w) * polymer[bead_i].t[0] + (sin_theta * r_ij_t + cos_theta * r_ij_w) * uni_w[0] + r_ij_v * uni_v[0],
-                (cos_theta * r_ij_t - sin_theta * r_ij_w) * polymer[bead_i].t[1] + (sin_theta * r_ij_t + cos_theta * r_ij_w) * uni_w[1] + r_ij_v * uni_v[1],
-                (cos_theta * r_ij_t - sin_theta * r_ij_w) * polymer[bead_i].t[2] + (sin_theta * r_ij_t + cos_theta * r_ij_w) * uni_w[2] + r_ij_v * uni_v[2]};
-
-        // renormalize r_ij
-        r_ij_norm_new = std::sqrt(r_ij[0] * r_ij[0] + r_ij[1] * r_ij[1] + r_ij[2] * r_ij[2]);
-        r_ij[0] *= r_ij_norm / r_ij_norm_new;
-        r_ij[1] *= r_ij_norm / r_ij_norm_new;
-        r_ij[2] *= r_ij_norm / r_ij_norm_new;
-
-        polymer[j].r = {polymer[bead_i].r[0] + r_ij[0], polymer[bead_i].r[1] + r_ij[1], polymer[bead_i].r[2] + r_ij[2]};
-
-        // check is r_ij_norm changed
-        if (std::abs(r_ij_norm - std::sqrt(r_ij[0] * r_ij[0] + r_ij[1] * r_ij[1] + r_ij[2] * r_ij[2])) > 1e-6)
-        {
-            std::cout << "Error: r_ij_norm changed" << std::endl;
-            // return 0;
-        }
-        */
     }
 
     // reconstruct r
@@ -288,19 +261,6 @@ int semiflexible_polymer::update_bead_tangent_rotation(int bead_i)
                         polymer[k - 1].r[1] + polymer[k - 1].t[1],
                         polymer[k - 1].r[2] + polymer[k - 1].t[2]};
     }
-    /*
-
-    // update all t accodingly
-    for (int j = bead_i; j < polymer.size() - 1; j++)
-    {
-        polymer[j].t = {polymer[j + 1].r[0] - polymer[j].r[0], polymer[j + 1].r[1] - polymer[j].r[1], polymer[j + 1].r[2] - polymer[j].r[2]};
-        // check if t is normalized
-        if (std::abs(polymer[j].t[0] * polymer[j].t[0] + polymer[j].t[1] * polymer[j].t[1] + polymer[j].t[2] * polymer[j].t[2] - 1) > 1e-6)
-        {
-            std::cout << "Error: t not normalized" << std::endl;
-        }
-    }
-    */
 
     // calculate updated energy
     new_Tb = (bead_i == 0) ? 0 : calc_bending_of_two_t(polymer[bead_i - 1].t, polymer[bead_i].t);
@@ -322,6 +282,136 @@ int semiflexible_polymer::update_bead_tangent_rotation(int bead_i)
         for (int j = bead_i; j < polymer.size(); j++)
         {
             polymer[j] = old_beads[j - bead_i];
+        }
+        return 0;
+    }
+}
+
+int semiflexible_polymer::update_bead_pivot_left(int bead_i)
+{
+    std::vector<bead> old_beads{}; // starting with bead_i
+    double old_E = 0;
+    double new_E = 0;
+    double old_Tb = 0;
+    double new_Tb = 0;
+    for (int j = 0; j <= bead_i; j++)
+    {
+        old_beads.push_back(polymer[j]); // (i),(i+1)... up to (L-1),(L)
+    }
+
+    // for any bead_i with a t, which is [0,L-1]
+    // everything j < bead_i us updated, since t_i rotate
+    // what updates:
+    // t(0), t(1), ...  t(i-1)
+    // Energ change related
+    // bending (i-1)--(i)--(i+1)-- on (i) if i>1 else, no bending changed
+    // streching r(i) - r(0)
+    // shearing all j<bead_i
+    // TODO: wrote up to here continue!!!
+    if (bead_i == 0)
+    {
+        std::cout << "Error: bead_i == 0" << std::endl;
+        return 0;
+    }
+    // note:  bead_i > 0
+    old_Tb = calc_bending_of_two_t(polymer[bead_i - 1].t, polymer[bead_i].t);
+    old_E = 0.5 * Epar.kappa * old_Tb;
+    old_E += -Epar.f * (polymer[L].r[0] - polymer[0].r[0]);
+    for (int j = 0; j < bead_i; j++)
+    {
+        old_E += -Epar.g * polymer[j].r[2] * polymer[j].t[0];
+    }
+
+    // update
+    // 1. find random unit uni_v vector not parallel to t
+    std::vector<double> uni_v = rand_uni_vec();
+    while (std::abs(inner_product(uni_v, polymer[bead_i - 1].t)) < 1e-6)
+    { // uni_v must be not parallel to t
+        uni_v = rand_uni_vec();
+    }
+    // 2. transform uni_v to vector uni_w perpendicular to t
+    std::vector<double> uni_w = cross_product(polymer[bead_i - 1].t, uni_v);
+    double uni_w_norm = std::sqrt(uni_w[0] * uni_w[0] + uni_w[1] * uni_w[1] + uni_w[2] * uni_w[2]);
+    uni_w[0] /= uni_w_norm;
+    uni_w[1] /= uni_w_norm;
+    uni_w[2] /= uni_w_norm;
+
+    // also need uni_v perpendicular to both w and t
+    uni_v = cross_product(polymer[bead_i - 1].t, uni_w);
+    double uni_v_norm = std::sqrt(uni_v[0] * uni_v[0] + uni_v[1] * uni_v[1] + uni_v[2] * uni_v[2]);
+    uni_v[0] /= uni_v_norm;
+    uni_v[1] /= uni_v_norm;
+    uni_v[2] /= uni_v_norm;
+
+    // 3. rotate every r(ij) towards uni_w for random angle theta such that cos(theta) uniform in [cos d_theta,1]
+    // due to the length of rotated polymer, here use d_theta/(L-bead_i), to adjust acceptance rate
+    double d_theta_in_use = (Epar.f == 0 && Epar.g == 0) ? d_theta : d_theta / (1 + (Epar.f + Epar.g) * bead_i);
+    double cos_theta = 1 - rand_uni(gen) * (1 - std::cos(1.0 * d_theta_in_use));
+    double sin_theta = std::sqrt(1 - cos_theta * cos_theta);
+    std::vector<double> r_ij(3, 0);
+    double r_ij_norm = 0;
+    double r_ij_norm_new = 0;
+    double r_ij_v = 0;
+    double r_ij_w = 0;
+    double r_ij_t = 0;
+
+    double tj_v = 0;
+    double tj_w = 0;
+    double tj_t = 0;
+    double tj_norm = 0;
+    // note: txw = v
+    // check othorgonal of v,w,t
+    if (std::abs(inner_product(uni_v, uni_w)) > 1e-6 || std::abs(inner_product(uni_v, polymer[bead_i-1].t)) > 1e-6 || std::abs(inner_product(uni_w, polymer[bead_i-1].t)) > 1e-6)
+    {
+        std::cout << "Error: uni_v, uni_w, t not orthogonal" << std::endl;
+        std::cout << inner_product(uni_v, uni_w) << ":" << inner_product(uni_v, polymer[bead_i].t) << ":" << inner_product(uni_w, polymer[bead_i].t) << std::endl;
+        return 0;
+    }
+    std::vector<double> ti_old = polymer[bead_i].t;
+    for (int j = 0; j < bead_i; j++) // polymer[L] has no t
+    {
+        // rotate tj towards uni_w by theta
+        tj_v = inner_product(polymer[j].t, uni_v);
+        tj_w = inner_product(polymer[j].t, uni_w);
+        tj_t = inner_product(polymer[j].t, ti_old);
+        polymer[j].t = {(cos_theta * tj_t - sin_theta * tj_w) * ti_old[0] + (sin_theta * tj_t + cos_theta * tj_w) * uni_w[0] + tj_v * uni_v[0],
+                        (cos_theta * tj_t - sin_theta * tj_w) * ti_old[1] + (sin_theta * tj_t + cos_theta * tj_w) * uni_w[1] + tj_v * uni_v[1],
+                        (cos_theta * tj_t - sin_theta * tj_w) * ti_old[2] + (sin_theta * tj_t + cos_theta * tj_w) * uni_w[2] + tj_v * uni_v[2]};
+        // renormalize t
+        tj_norm = std::sqrt(polymer[j].t[0] * polymer[j].t[0] + polymer[j].t[1] * polymer[j].t[1] + polymer[j].t[2] * polymer[j].t[2]);
+        polymer[j].t[0] /= tj_norm;
+        polymer[j].t[1] /= tj_norm;
+        polymer[j].t[2] /= tj_norm;
+    }
+
+    // reconstruct r
+    for (int k = bead_i - 1; k >= 0; k--)
+    {
+        polymer[k].r = {polymer[k + 1].r[0] - polymer[k].t[0],
+                        polymer[k + 1].r[1] - polymer[k].t[1],
+                        polymer[k + 1].r[2] - polymer[k].t[2]};
+    }
+
+    // calculate updated energy
+    new_Tb = calc_bending_of_two_t(polymer[bead_i - 1].t, polymer[bead_i].t);
+    new_E = 0.5 * Epar.kappa * new_Tb;
+    new_E += -Epar.f * (polymer[L].r[0] - polymer[0].r[0]);
+    for (int j = 0; j < bead_i; j++)
+    {
+        new_E += -Epar.g * polymer[j].r[2] * polymer[j].t[0];
+    }
+
+    if (satisfy_self_avoiding_condition_by_group(0, bead_i) && rand_uni(gen) < std::exp(-beta * (new_E - old_E)))
+    {
+        E_sys += new_E - old_E;
+        Tb_sys += new_Tb - old_Tb;
+        return 1;
+    }
+    else
+    {
+        for (int j = 0; j <= bead_i; j++)
+    {
+            polymer[j] = old_beads[j];
         }
         return 0;
     }
@@ -999,30 +1089,54 @@ double semiflexible_polymer::calc_bending_of_two_t(std::vector<double> t1, std::
     return ans;
 }
 
+double semiflexible_polymer::run_MC_sweep(int step_per_sweep)
+{
+    int bead_i, bead_j, bead_ij;
+    double acceptance_rate = 0;
+    int mid_point = int(L / 2);
+    for (int n = 0; n < step_per_sweep; n++)
+    {
+        bead_ij = 2 + int(rand_uni(gen) * Epar.kappa);   //~[2,L]
+        bead_i = int(rand_uni(gen) * (L - 2 * bead_ij)); // take between [0,mid_poin-bead_ij] and [mid_point,L-bead_ij]
+        if (bead_i > mid_point - bead_ij)
+        {
+            bead_i += bead_ij;
+            bead_j = bead_i + bead_ij;
+            bead_j = std::min(bead_j, L - 1);
+        }
+        else
+        {
+            bead_j = bead_i + bead_ij;
+            bead_j = std::min(bead_j, mid_point);
+        }
+        update_bead_crankshaft(bead_i, bead_j);
+
+        bead_i = int(rand_uni(gen) * L - 1) + 1; // take from [1,L-1]
+        if (bead_i >= mid_point)
+        {
+            update_bead_pivot_right(bead_i);
+        }
+        else
+        {
+            update_bead_pivot_left(bead_i);
+        }
+    }
+    return acceptance_rate / step_per_sweep;
+}
+
 void semiflexible_polymer::run_simultion(int therm_sweep, int MC_sweeps, int step_per_sweep, std::string folder, std::string finfo, int bin_num, int save_more_config)
 {
     std::vector<observable> obs_ensemble;
 
     double conrot_acceptance_rate = 0;
     double tanrot_acceptance_rate = 0;
-    int bead_i, bead_j, bead_ij;
+
 
     beta = 0; // randomization
     for (int i = 0; i < therm_sweep; i++)
     {
         std::cout << "randomization(beta=0) sweep " << i << " out of " << therm_sweep << " (" << (i * 100) / therm_sweep << "%)\r";
-        for (int j = 0; j < step_per_sweep; j++)
-        {
-            bead_ij = 2 + int(rand_uni(gen) * Epar.kappa); //~[2,L]
-            bead_ij = 2;
-            bead_i = int(rand_uni(gen) * (L - bead_ij)); // take between [0,L-bead_ij]
-            bead_j = bead_i + bead_ij;
-            bead_j = std::min(bead_j, L - 1);
-            update_bead_concerted_rotation(bead_i, bead_j);
-
-            bead_i = int(rand_uni(gen) * L);
-            update_bead_tangent_rotation(bead_i);
-        }
+        run_MC_sweep(step_per_sweep);
     }
 
     std::cout << "\n";
@@ -1031,18 +1145,7 @@ void semiflexible_polymer::run_simultion(int therm_sweep, int MC_sweeps, int ste
     {
         beta = (i + 1) * 1.0 / therm_sweep; // tempering
         std::cout << "thermalization/tempering (beta -> 1) sweep " << i << " out of " << therm_sweep << " (" << (i * 100) / therm_sweep << "%)\r";
-
-        for (int j = 0; j < step_per_sweep; j++)
-        {
-            bead_ij = 2 + int(rand_uni(gen) * Epar.kappa); //~[2,L]
-            bead_i = int(rand_uni(gen) * (L - bead_ij));   // take between [0,L-bead_ij]
-            bead_j = bead_i + bead_ij;
-            bead_j = std::min(bead_j, L - 1);
-            update_bead_concerted_rotation(bead_i, bead_j);
-
-            bead_i = int(rand_uni(gen) * L); // take between [0,L-1]
-            update_bead_tangent_rotation(bead_i);
-        }
+        run_MC_sweep(step_per_sweep);
     }
 
     // data collection run
@@ -1062,19 +1165,7 @@ void semiflexible_polymer::run_simultion(int therm_sweep, int MC_sweeps, int ste
     for (int i = 0; i < MC_sweeps; i++)
     {
         std::cout << "MC sweep " << i << " out of " << MC_sweeps << " (" << (i * 100) / MC_sweeps << "%)\r";
-        for (int j = 0; j < step_per_sweep; j++)
-        {
-            // bead_ij = 2 + int(rand_uni(gen) * (L / 5 - 1)); //~[2,L/3]
-            bead_ij = 2 + int(rand_uni(gen) * Epar.kappa); // segment size propotional to persistence length
-            bead_i = int(rand_uni(gen) * (L - bead_ij));   // take between [0,L-bead_ij]
-            bead_j = bead_i + bead_ij;
-            bead_j = std::min(bead_j, L - 1);
-            // std::cout<<"\nbead_i="<<bead_i<<", bead_j="<<bead_j<<std::endl;
-            conrot_acceptance_rate += update_bead_concerted_rotation(bead_i, bead_j);
-
-            bead_i = int(rand_uni(gen) * L); // take between [0,L-1]
-            tanrot_acceptance_rate += update_bead_tangent_rotation(bead_i);
-        }
+        run_MC_sweep(step_per_sweep);
 
         obs_ensemble.push_back(measure_observable(bin_num));
         if (i % 100 == 0 && save_more_config)

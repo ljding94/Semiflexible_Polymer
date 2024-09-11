@@ -172,7 +172,7 @@ def plot_obs_kappa(tex_lw=240.71031, ppi=72):
 
     # plot tts vs. kappa
     ms = 4
-    labelpad = -0.75
+    labelpad = 0.0
     folder = "../data/20240807"
     kappas = [2.0, 4.0, 8.0, 16.0]
     param = [(200, kappa, 0.0, 0.0) for kappa in kappas]
@@ -255,7 +255,8 @@ def plot_obs_kappa(tex_lw=240.71031, ppi=72):
     for ax in [ax11, ax21, ax12, ax22]:
         ax.text(0.8, 0.1, annotation.pop(0), fontsize=9, transform=ax.transAxes)
 
-    plt.tight_layout(pad=0.1)
+    plt.tight_layout(pad=0.2)
+    #plt.subplots_adjust(wspace=0.2, hspace=0.25)
     plt.savefig("./figures/obs_kappa.pdf", format="pdf")
     plt.show()
     plt.close()

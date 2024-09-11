@@ -44,8 +44,8 @@ int main(int argc, char const *argv[])
         {
             // local run
             bin_num = 51;
-            therm_sweeps = 1500;
-            MC_sweeps = 3000;
+            therm_sweeps = 150;
+            MC_sweeps = 300;
             step_per_sweep = L*L; //  note: 10L^2 * (1000+1000+2000) for L1000 take 400s
             // use "prog name par* local" for local running
             // used for local running!
@@ -53,8 +53,8 @@ int main(int argc, char const *argv[])
             folder = "../data/scratch_local/" + today;
         } else {
             bin_num = 51;
-            therm_sweeps = 1500;
-            MC_sweeps = 3000;
+            therm_sweeps = 2000;
+            MC_sweeps = 4000;
             step_per_sweep = L*L;
             // running on cluster
             std::cout << "running on cluster\n";

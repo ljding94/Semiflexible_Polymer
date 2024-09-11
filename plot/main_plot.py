@@ -5,7 +5,7 @@ from Sq_plot import *
 
 def main():
     #plot_config_update_demo()
-    #plot_obs_kappa()
+    plot_obs_kappa()
     #plot_obs_f()
     #plot_obs_gamma()
 
@@ -13,7 +13,7 @@ def main():
     #plot_obs_gamma_3panel()
 
     #plot_Sq()
-    plot_Sq2D()
+    #plot_Sq2D()
     #plot_TOC()
 # todo: 1. increas hspace between subplot
 # 2. remove legend for theory line

@@ -69,9 +69,10 @@ public:
     // initialization
     semiflexible_polymer(double L_, Energy_parameter Epar_, double d_theta_, int fixe_bead_0_ = 1);
     // MCMC update
-    int update_bead_concerted_rotation(int bead_i, int bead_j);
+    int update_bead_crankshaft(int bead_i, int bead_j);
     // con-rot update in a corn with angle d_theta
-    int update_bead_tangent_rotation(int bead_i);
+    int update_bead_pivot_right(int bead_i); // pivot right part
+    int update_bead_pivot_left(int bead_i); // pivot left part
     // rotage the tangent of bead i, every bead > i position will be changed
 
     // check self-avoid condition
@@ -93,6 +94,7 @@ public:
     void save_polymer_to_file(std::string filename);
     void save_observable_to_file(std::string filename, std::vector<observable> obs_ensemble, bool save_detail = false);
 
+    double run_MC_sweep(int step_per_sweep);
     void run_simultion(int therm_sweep, int MC_sweeps, int step_per_sweep, std::string folder, std::string finfo, int bin_num, int save_more_config);
 
     // spB stand for s per B or s/P
