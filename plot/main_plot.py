@@ -20,6 +20,7 @@ def main():
 
     # for ML paper
     plot_Sq2D_kappa()
+    plot_Sq2D_fg()
 
 
 # todo: 1. increas hspace between subplot

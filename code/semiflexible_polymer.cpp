@@ -8,19 +8,14 @@
 // #define PI 3.14159265358979323846
 
 // initialization
-semiflexible_polymer::semiflexible_polymer(double L_, Energy_parameter Epar_, double d_theta_, int fixe_bead_0_)
+semiflexible_polymer::semiflexible_polymer(double L_, Energy_parameter Epar_, bool random_Epar)
 {
     // system related
     beta = 1;
     L = L_;
-    fix_bead_0 = fixe_bead_0_;
 
     // set energy related
     // geometric
-    Epar.kappa = Epar_.kappa;
-    Epar.f = Epar_.f;
-    Epar.g = Epar_.g;
-    d_theta = d_theta_;
 
     // set random number generators
     std::random_device rd;
@@ -32,6 +27,20 @@ semiflexible_polymer::semiflexible_polymer(double L_, Energy_parameter Epar_, do
     rand_uni = rand_uni_set;
     rand_norm = rand_norm_set;
 
+    if (random_Epar)
+    {
+        Epar.kappa = 2 + 18 * rand_uni(gen);
+        Epar.f = 0.5 * rand_uni(gen);
+        Epar.g = 2.0 * rand_uni(gen);
+    }
+    else
+    {
+        Epar.kappa = Epar_.kappa;
+        Epar.f = Epar_.f;
+        Epar.g = Epar_.g;
+    }
+
+    d_theta = M_PI * 2.0 / 3 / (1.0 + std::sqrt(Epar.kappa));
     std::cout << "setting system param:" << "L" << L << ", kappa:" << Epar.kappa << ", f:" << Epar.f << ", g:" << Epar.g << "\n";
 
     // initial configuration
@@ -41,7 +50,7 @@ semiflexible_polymer::semiflexible_polymer(double L_, Energy_parameter Epar_, do
 
     // initialize the polymer as straight along x axis,
     // such that there is no bending the shear energy
-    //int mid_point = int(L / 2);
+    // int mid_point = int(L / 2);
     for (int i = 0; i < L; i++)
     {
         polymer[i].r = {0, 0, 1.0 * i};
@@ -1092,7 +1101,7 @@ double semiflexible_polymer::run_MC_sweep(int step_per_sweep)
     // int mid_point = int(L / 2);
     for (int n = 0; n < step_per_sweep; n++)
     {
-        bead_ij = 2 + int(rand_uni(gen) * Epar.kappa);   //~[2,L]
+        bead_ij = 2 + int(rand_uni(gen) * Epar.kappa); //~[2,L]
         bead_i = int(rand_uni(gen) * (L - bead_ij));
         bead_i += bead_ij;
         bead_j = bead_i + bead_ij;
@@ -1172,6 +1181,6 @@ void semiflexible_polymer::run_simultion(int therm_sweep, int MC_sweeps, int ste
     std::cout << "tanrot_acceptance rate:" << tanrot_acceptance_rate / MC_sweeps / step_per_sweep << std::endl;
 
     save_polymer_to_file(folder + "/config_" + finfo + ".csv");
-    save_observable_to_file(folder + "/obs_MC_" + finfo + ".csv", obs_ensemble, true);
+    //save_observable_to_file(folder + "/obs_MC_" + finfo + ".csv", obs_ensemble, true);
     save_observable_to_file(folder + "/obs_" + finfo + ".csv", obs_ensemble, false);
 }

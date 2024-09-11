@@ -67,7 +67,7 @@ public:
     std::vector<double> rand_uni_vec(); // generate a random unit vector
 
     // initialization
-    semiflexible_polymer(double L_, Energy_parameter Epar_, double d_theta_, int fixe_bead_0_ = 1);
+    semiflexible_polymer(double L_, Energy_parameter Epar_, bool random_Epar = 0);
     // MCMC update
     int update_bead_crankshaft(int bead_i, int bead_j);
     // con-rot update in a corn with angle d_theta
