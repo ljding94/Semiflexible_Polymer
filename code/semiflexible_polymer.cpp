@@ -72,9 +72,9 @@ int semiflexible_polymer::update_bead_crankshaft(int bead_i, int bead_j)
         bead_i = bead_j;
         bead_j = bead;
     }
-    if (bead_j > L)
+    bead_j = std::min(bead_j, L);
+    if (bead_j <= bead_i + 2)
     {
-        std::cout << "Error: bead_j > L" << std::endl;
         return 0;
     }
     std::vector<bead> old_beads{}; // [bead_i, bead_j]
@@ -83,7 +83,7 @@ int semiflexible_polymer::update_bead_crankshaft(int bead_i, int bead_j)
     double old_Tb = 0;
     double new_Tb = 0;
 
-    for (int j = bead_i; j < bead_j; j++)
+    for (int j = bead_i; j <= bead_j; j++)
     {
         old_beads.push_back(polymer[j]); // (i),(i+1)... up to --(j),
     }
@@ -163,7 +163,7 @@ int semiflexible_polymer::update_bead_crankshaft(int bead_i, int bead_j)
     }
     else
     {
-        for (int j = bead_i; j < bead_j; j++)
+        for (int j = bead_i; j <= bead_j; j++)
         {
             polymer[j] = old_beads[j - bead_i];
         }
@@ -1105,7 +1105,8 @@ double semiflexible_polymer::run_MC_sweep(int step_per_sweep)
         bead_i = int(rand_uni(gen) * (L - bead_ij));
         bead_i += bead_ij;
         bead_j = bead_i + bead_ij;
-        bead_j = std::min(bead_j, L);
+
+        acceptance_rate += update_bead_crankshaft(bead_i, bead_j);
         /*
         // take between [0,mid_poin-bead_ij] and [mid_point,L-bead_ij]
         if (bead_i > mid_point - bead_ij)
@@ -1120,7 +1121,6 @@ double semiflexible_polymer::run_MC_sweep(int step_per_sweep)
             bead_j = std::min(bead_j, mid_point);
         }
         */
-        update_bead_crankshaft(bead_i, bead_j);
 
         bead_i = int(rand_uni(gen) * L); // take from [1,L-1]
         update_bead_pivot_right(bead_i);
@@ -1132,8 +1132,7 @@ void semiflexible_polymer::run_simultion(int therm_sweep, int MC_sweeps, int ste
 {
     std::vector<observable> obs_ensemble;
 
-    double conrot_acceptance_rate = 0;
-    double tanrot_acceptance_rate = 0;
+    double acceptance_rate = 0;
 
     beta = 0; // randomization
     for (int i = 0; i < therm_sweep; i++)
@@ -1168,7 +1167,7 @@ void semiflexible_polymer::run_simultion(int therm_sweep, int MC_sweeps, int ste
     for (int i = 0; i < MC_sweeps; i++)
     {
         std::cout << "MC sweep " << i << " out of " << MC_sweeps << " (" << (i * 100) / MC_sweeps << "%)\r";
-        run_MC_sweep(step_per_sweep);
+        acceptance_rate += run_MC_sweep(step_per_sweep);
 
         obs_ensemble.push_back(measure_observable(bin_num));
         if (i % 100 == 0 && save_more_config)
@@ -1177,10 +1176,9 @@ void semiflexible_polymer::run_simultion(int therm_sweep, int MC_sweeps, int ste
         }
     }
     std::cout << "\n";
-    std::cout << "conrot_acceptance rate:" << conrot_acceptance_rate / MC_sweeps / step_per_sweep << std::endl;
-    std::cout << "tanrot_acceptance rate:" << tanrot_acceptance_rate / MC_sweeps / step_per_sweep << std::endl;
+    std::cout << "crankshaft_acceptance rate:" << acceptance_rate / MC_sweeps << std::endl;
 
     save_polymer_to_file(folder + "/config_" + finfo + ".csv");
-    //save_observable_to_file(folder + "/obs_MC_" + finfo + ".csv", obs_ensemble, true);
+    // save_observable_to_file(folder + "/obs_MC_" + finfo + ".csv", obs_ensemble, true);
     save_observable_to_file(folder + "/obs_" + finfo + ".csv", obs_ensemble, false);
 }

@@ -30,7 +30,6 @@ int main(int argc, char const *argv[])
     if (argc == 7)
     {
         std::cout << "Usage: " << argv[0] << " L kappa f g save_more_config folder" << std::endl;
-        return 1;
 
         L = std::atoi(argv[1]);
         Epar.kappa = std::atof(argv[2]);
@@ -47,12 +46,12 @@ int main(int argc, char const *argv[])
         int step_per_sweep;
 
         bin_num = 51;
-        therm_sweeps = 2000;
-        MC_sweeps = 4000;
+        therm_sweeps = 1500;
+        MC_sweeps = 3000;
         step_per_sweep = L * L;
 
         // polymer.save_polymer_to_file(folder + "/config_" + finfo + "_init.csv");
-        // polymer.save_polymer_to_file(folder + "/config_init_" + finfo + ".csv"); // save sample polymer
+        polymer.save_polymer_to_file(folder + "/config_init_" + finfo + ".csv"); // save sample polymer
         polymer.run_simultion(therm_sweeps, MC_sweeps, step_per_sweep, folder, finfo, bin_num, save_more_config);
     }
     else if (argc == 4)
@@ -69,12 +68,12 @@ int main(int argc, char const *argv[])
         int step_per_sweep;
 
         bin_num = 51;
-        therm_sweeps = 2000;
-        MC_sweeps = 4000;
+        therm_sweeps = 1500;
+        MC_sweeps = 3000;
         step_per_sweep = L * L;
 
         // polymer.save_polymer_to_file(folder + "/config_" + finfo + "_init.csv");
-        // polymer.save_polymer_to_file(folder + "/config_init_" + finfo + ".csv"); // save sample polymer
+        polymer.save_polymer_to_file(folder + "/config_init_" + finfo + ".csv"); // save sample polymer
         polymer.run_simultion(therm_sweeps, MC_sweeps, step_per_sweep, folder, finfo, bin_num, save_more_config);
     }
     else
