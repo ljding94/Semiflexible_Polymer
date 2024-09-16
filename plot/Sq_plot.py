@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.ndimage import gaussian_filter
+from config_plot import *
 
 
 def calc_Sq_discrete_infinite_thin_rod(q, L):
@@ -181,32 +183,42 @@ def plot_Sq2D(tex_lw=240.71031, ppi=72):
 
 
 def plot_Sq2D_kappa(tex_lw=240.71031, ppi=72):
-    fig = plt.figure(figsize=(tex_lw / ppi * 1, tex_lw / ppi * 0.42))
+    L = 200
+    kappa = [5.0, 10.0, 15.0]
+    f = 0.00
+    gL = 0.00
+    folder = "../data/20240913_precision"
+    fig, axs = plt.subplots(1, len(kappa), figsize=(tex_lw / ppi * 1, tex_lw / ppi * 0.42), sharex="row", sharey="row")
     plt.rc("text", usetex=True)
     plt.rc("text.latex", preamble=r"\usepackage{physics}")
-    ax00 = plt.subplot2grid((1, 3), (0, 0))
-    ax01 = plt.subplot2grid((1, 3), (0, 1), sharex=ax00, sharey=ax00)
-    ax02 = plt.subplot2grid((1, 3), (0, 2), sharex=ax00, sharey=ax00)
 
-    axs = [ax00, ax01, ax02]
-    # axs = [ax00]
-    filenames = ["../data/scratch_local/data_pool/obs_L100_kappa5.0_f0.00_gL0.00.csv",
-                 "../data/scratch_local/data_pool/obs_L100_kappa10.0_f0.00_gL0.00.csv",
-                 "../data/scratch_local/data_pool/obs_L100_kappa15.0_f0.00_gL0.00.csv"]
-
-    for i in range(len(axs)):
-        Sq2D, qB = get_Sq2D_data(filenames[i])
+    # plot sample configs
+    '''
+    for i in range(len(kappa)):
+        finfo = f"L{L}_kappa{kappa[i]:.1f}_f{f:.2f}_gL{gL:.2f}"
+        for j in range(30):
+            filename = f"{folder}/{finfo}/config_{j}.csv"
+            ax_plot_2dconfig_from_file(axs[0, i], filename, "", 0)
+        axs[0, i].set_aspect("equal")
+        axs[0, i].set_axis_off()
+        #axs[0, i].set_xlim(-xlim, xlim)
+        #axs[0, i].set_ylim(-xlim, xlim)
+    '''
+    # plot Sq2D for various kappa
+    for i in range(len(kappa)):
+        filename = f"{folder}/obs_L{L:.0f}_kappa{kappa[i]:.1f}_f{f:.2f}_gL{gL:.2f}.csv"
+        Sq2D, qB = get_Sq2D_data(filename)
         qBx, qBz = np.meshgrid(qB, qB)
         print(np.min(Sq2D), np.max(Sq2D))
-        axs[i].pcolormesh(qBx, qBz, np.log10(Sq2D), vmax=0, vmin=-2.5, cmap="rainbow", shading='gouraud')
-        Cs = axs[i].contour(qBx, qBz, np.log10(Sq2D), vmax=0, vmin=-2.5, levels=np.linspace(-2.5, 0, 6), colors="gray", linewidths=0.5, linestyle=":")
+        axs[i].pcolormesh(qBx, qBz, np.log10(Sq2D), vmax=0, vmin=-3, cmap="rainbow", shading='gouraud')
+        Cs = axs[i].contour(qBx, qBz, np.log10(Sq2D), vmax=0, vmin=-3, levels=np.linspace(-3, 0, 7), colors="gray", linewidths=0.5, linestyle=":")
         axs[i].clabel(Cs, Cs.levels, inline=True, fontsize=7, fmt="%1.1f", colors="black")
         axs[i].set_xlabel(r"$Q_x$", fontsize=9, labelpad=-0.0)
         axs[i].tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=False, labelsize=7)
-        # axs[i].xaxis.set_major_locator(plt.MultipleLocator(0.5))
-        # axs[i].xaxis.set_minor_locator(plt.MultipleLocator(0.25))
-        # axs[i].yaxis.set_major_locator(plt.MultipleLocator(0.5))
-        # axs[i].yaxis.set_minor_locator(plt.MultipleLocator(0.25))
+        axs[i].xaxis.set_major_locator(plt.MultipleLocator(0.5))
+        axs[i].xaxis.set_minor_locator(plt.MultipleLocator(0.25))
+        axs[i].yaxis.set_major_locator(plt.MultipleLocator(0.5))
+        axs[i].yaxis.set_minor_locator(plt.MultipleLocator(0.25))
         axs[i].set_title(r"$\kappa = $"+f"{[5.0, 10.0, 15.0, 20.0][i]:.0f}", fontsize=9, pad=2.5)
         axs[i].set_aspect("equal")
 
@@ -214,50 +226,83 @@ def plot_Sq2D_kappa(tex_lw=240.71031, ppi=72):
     axs[0].tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=True, labelsize=7)
 
     plt.tight_layout(pad=0.2)
-    #plt.subplots_adjust(wspace=0.05)
     plt.savefig("./figures/Sq2D_kappa.pdf", format="pdf")
     plt.savefig("./figures/Sq2D_kappa.png", format="png", dpi=300)
     plt.show()
     plt.close()
 
 
-def plot_Sq2D_fg(tex_lw=240.71031, ppi=72):
+def plot_config_fg(tex_lw=240.71031, ppi=72):
 
-    f = [0.00, 0.10, 0.30]
-    gL = [0.00, 0.50, 1.50]
+    L = 200
+    kappa = 10.0
+    f = [0.00, 0.20, 0.40]
+    gL = [0.00, 1.00, 2.00]
+    fig, axs = plt.subplots(len(f), len(gL), figsize=(tex_lw / ppi * 1, tex_lw / ppi * 1.1), sharex=True, sharey=True)
+    plt.rc("text", usetex=True)
+    plt.rc("text.latex", preamble=r"\usepackage{physics}")
+
+    folder = "../data/20240913_precision"
+    for i in range(len(f)):
+        for j in range(len(gL)):
+            finfo = f"L{L}_kappa{kappa:.0f}_f{f[i]:.2f}_gL{gL[j]:.2f}"
+            for k in range(30):
+                filename = f"{folder}/{finfo}/config_{k}.csv"
+                flip = False
+                if(i==0):
+                    flip=True
+                ax_plot_2dconfig_from_file(axs[i, j], filename, "", 0, flip=flip)
+            axs[i, j].set_aspect("equal")
+            axs[i, j].set_axis_off()
+
+    # axs[0].tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=True, labelsize=7)
+
+    plt.tight_layout(pad=0.2)
+    # plt.subplots_adjust(wspace=0.05)
+    plt.savefig("./figures/config_fg.pdf", format="pdf")
+    plt.savefig("./figures/config_fg.png", format="png", dpi=300)
+    plt.show()
+    plt.close()
+
+
+def plot_Sq2D_fg(tex_lw=240.71031, ppi=72):
+    L = 200
+    kappa = 10.0
+    f = [0.00, 0.20, 0.40]
+    gL = [0.00, 1.00, 2.00]
     fig, axs = plt.subplots(len(f), len(gL), figsize=(tex_lw / ppi * 1, tex_lw / ppi * 1.1), sharex=True, sharey=True)
     plt.rc("text", usetex=True)
     plt.rc("text.latex", preamble=r"\usepackage{physics}")
 
     for i in range(len(f)):
         for j in range(len(gL)):
-            filename = f"../data/scratch_local/data_pool/obs_L100_kappa10.0_f{f[i]:.2f}_gL{gL[j]:.2f}.csv"
+            filename = f"../data/20240913_precision/obs_L{L:.0f}_kappa{kappa:.0f}_f{f[i]:.2f}_gL{gL[j]:.2f}.csv"
             Sq2D, qB = get_Sq2D_data(filename)
             qBx, qBz = np.meshgrid(qB, qB)
             print(np.min(Sq2D), np.max(Sq2D))
-            axs[i, j].pcolormesh(qBx, qBz, np.log10(Sq2D), vmax=0, vmin=-2.5, cmap="rainbow", shading='gouraud')
-            Cs = axs[i, j].contour(qBx, qBz, np.log10(Sq2D), vmax=0, vmin=-2.5, levels=np.linspace(-2.5, 0, 6), colors="gray", linewidths=0.5, linestyle=":")
+            axs[i, j].pcolormesh(qBx, qBz, np.log10(Sq2D), vmax=0, vmin=-3, cmap="rainbow", shading='gouraud')
+            Cs = axs[i, j].contour(qBx, qBz, np.log10(Sq2D), vmax=0, vmin=-3, levels=np.linspace(-3, 0, 4), colors="gray", linewidths=0.5, linestyle=":")
             axs[i, j].clabel(Cs, Cs.levels, inline=True, fontsize=7, fmt="%1.1f", colors="black")
             # axs[i,j].set_xlabel(r"$Q_x$", fontsize=9, labelpad=-0.0)
-            lb = True if(i==2) else False
-            ll = True if(j==0) else False
+            lb = True if (i == 2) else False
+            ll = True if (j == 0) else False
             axs[i, j].tick_params(which="both", direction="in", top="on", right="on", labelbottom=lb, labelleft=ll, labelsize=7)
-            if(ll):
-                axs[i,j].set_ylabel(r"$Q_z$", fontsize=9, labelpad=-0.0)
-            if(lb):
-                axs[i,j].set_xlabel(r"$Q_x$", fontsize=9, labelpad=-0.0)
-            # axs[i].xaxis.set_major_locator(plt.MultipleLocator(0.5))
-            # axs[i].xaxis.set_minor_locator(plt.MultipleLocator(0.25))
-            # axs[i].yaxis.set_major_locator(plt.MultipleLocator(0.5))
-            # axs[i].yaxis.set_minor_locator(plt.MultipleLocator(0.25))
-            axs[i,j].set_title(r"$f=$"+f"{f[i]:.1f}"+r",$\gamma L=$"+f"{gL[j]:.1f}", fontsize=9, pad=2.5)
-            #axs[i,j].set_title(r"$(f,\gamma L)=$"+f"({f[i]:.1f},{gL[j]:.1f})", fontsize=9, pad=0.3)
-            axs[i,j].set_aspect("equal")
+            if (ll):
+                axs[i, j].set_ylabel(r"$Q_z$", fontsize=9, labelpad=-0.0)
+            if (lb):
+                axs[i, j].set_xlabel(r"$Q_x$", fontsize=9, labelpad=-0.0)
+            axs[i, j].xaxis.set_major_locator(plt.MultipleLocator(0.5))
+            axs[i, j].xaxis.set_minor_locator(plt.MultipleLocator(0.25))
+            axs[i, j].yaxis.set_major_locator(plt.MultipleLocator(0.5))
+            axs[i, j].yaxis.set_minor_locator(plt.MultipleLocator(0.25))
+            axs[i, j].set_title(r"$f=$"+f"{f[i]:.1f}"+r",$\gamma L=$"+f"{gL[j]:.0f}", fontsize=9, pad=2.5)
+            # axs[i,j].set_title(r"$(f,\gamma L)=$"+f"({f[i]:.1f},{gL[j]:.1f})", fontsize=9, pad=0.3)
+            axs[i, j].set_aspect("equal")
 
     # axs[0].tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=True, labelsize=7)
 
     plt.tight_layout(pad=0.2)
-    #plt.subplots_adjust(wspace=0.05)
+    # plt.subplots_adjust(wspace=0.05)
     plt.savefig("./figures/Sq2D_fg.pdf", format="pdf")
     plt.savefig("./figures/Sq2D_fg.png", format="png", dpi=300)
     plt.show()
