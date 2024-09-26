@@ -5,18 +5,22 @@ from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, WhiteKernel
 import os
 from scipy.optimize import curve_fit
+import pickle
 
 
 def get_all_feature_Sq2D_data(folder, parameters):
 
-    all_kappa, all_f, all_gL = [], [], [] # force related
-    all_R2, all_Rg2 = [], [] # R2, Rg2 related
-    all_Sxx, all_Syy, all_Szz, all_Sxy, all_Sxz, all_Syz = [], [], [], [], [], [] # S related
+    all_kappa, all_f, all_gL = [], [], []  # force related
+    all_R2, all_Rg2 = [], []  # R2, Rg2 related
+    all_Sxx, all_Syy, all_Szz, all_Sxy, all_Sxz, all_Syz = [], [], [], [], [], []  # S related
 
     all_Sq2D_flatten = []
     qB = []
     for L, run_num in parameters:
         filename = f"{folder}/obs_L{L}_random_run{run_num}.csv"
+        if not os.path.exists(filename):
+            print(f"File not found: {filename}")
+            continue
         data = np.genfromtxt(filename, delimiter=',', skip_header=1)
         kappa, f, g = data[0, 2:5]
         R2, Rg2 = data[0, 13:15]
@@ -41,7 +45,7 @@ def get_all_feature_Sq2D_data(folder, parameters):
     all_feature_name = ["kappa", "f", "gL", "R2", "Rg2", "Sxx", "Syy", "Szz", "Sxy", "Sxz", "Syz"]
     all_Sq2D_flatten = np.array(all_Sq2D_flatten)
     qB = np.array(qB)
-    return all_feature, all_feature_name, all_Sq2D_flatten, qB
+    return all_feature.T, all_feature_name, all_Sq2D_flatten, qB
 
 
 def calc_svd(folder, parameters):
@@ -56,21 +60,28 @@ def calc_svd(folder, parameters):
     print("np.array(svd.Vh).shape", np.array(svd.Vh).shape)
     # print(np.linalg.svd(all_Delta_Sq))
 
-    plt.figure(figsize=(6, 3))
+    plt.figure(figsize=(6, 6))
     # Subplot for svd.S
-    plt.subplot(1, 2, 1)
-    plt.plot(range(len(svd.S)), svd.S, "o--", markerfacecolor='none', label="svd.S")
-    plt.title("Singular Values (svd.S)")
+    ax00 = plt.subplot(2, 2, 1)
+    ax00.plot(range(len(svd.S)), svd.S, "o--", markerfacecolor='none', label="svd.S")
+    ax00.set_title("Singular Values (svd.S)")
 
     # Subplot for svd.U
-    plt.subplot(1, 2, 2)
-    # plt.plot(range(len(svd.Vh)), svd.Vh[0], label="svd.Vh[0]")
-    #plt.semilogx(qB, svd.Vh[0], label=r"$V^T[0]$")
-    #plt.semilogx(qB, svd.Vh[1], label=r"$V^T[1]$")
-    #plt.semilogx(qB, svd.Vh[2], label=r"$V^T[2]$")
-    plt.xlabel("qB")
-    plt.title("Left Singular Vectors (svd.Vh)")
-    plt.legend()
+    qBx, qBy = np.meshgrid(qB, qB)
+    ax01 = plt.subplot(2, 2, 2)
+    print("np.minimum(svd.Vh[0]), np.maximum(svd.Vh[0])", svd.Vh[0].min(), svd.Vh[0].max())
+    ax01.contourf(qBx, qBy, svd.Vh[0].reshape(np.shape(qBx)), levels=np.linspace(-0.3, 0.2, 10), cmap='rainbow')
+    ax01.set_title("Left Singular Vectors (svd.Vh[0])")
+
+    ax11 = plt.subplot(2, 2, 3)
+    print("np.minimum(svd.Vh[1]), np.maximum(svd.Vh[1])", svd.Vh[1].min(), svd.Vh[1].max())
+    ax11.contourf(qBx, qBy, svd.Vh[1].reshape(np.shape(qBx)), levels=np.linspace(-0.3, 0.2, 10), cmap='rainbow')
+    ax11.set_title("Left Singular Vectors (svd.Vh[1])")
+
+    ax12 = plt.subplot(2, 2, 4)
+    print("np.minimum(svd.Vh[2]), np.maximum(svd.Vh[2])", svd.Vh[2].min(), svd.Vh[2].max())
+    ax12.contourf(qBx, qBy, svd.Vh[2].reshape(np.shape(qBx)), levels=np.linspace(-0.3, 0.2, 10), cmap='rainbow')
+    ax12.set_title("Left Singular Vectors (svd.Vh[2])")
 
     plt.tight_layout()
     plt.savefig(f"{folder}/svd.png", dpi=300)
@@ -82,7 +93,7 @@ def calc_svd(folder, parameters):
     fig = plt.figure(figsize=(2*len(all_feature_names), 8))
     axs = [fig.add_subplot(2, len(all_feature_names)//2 + 1, i+1, projection='3d') for i in range(len(all_feature_names))]
     for i in range(len(all_feature_names)):
-        scatter = axs[i].scatter(SqV[:, 0], SqV[:, 1], SqV[:, 2], c=all_features[i, :], cmap="jet_r", s=2)
+        scatter = axs[i].scatter(SqV[:, 0], SqV[:, 1], SqV[:, 2], c=all_features[:, i], cmap="jet_r", s=2)
         axs[i].set_xlabel("V[0]")
         axs[i].set_ylabel("V[1]")
         axs[i].set_zlabel("V[2]")
@@ -97,7 +108,7 @@ def calc_svd(folder, parameters):
         axs[i].set_ylim(mid_y - max_range, mid_y + max_range)
         axs[i].set_zlim(mid_z - max_range, mid_z + max_range)
         fig.colorbar(scatter, ax=axs[i], fraction=0.02)
-        axs[i].view_init(elev=60., azim=18)
+        axs[i].view_init(elev=10., azim=-30)
 
     plt.tight_layout()
     plt.savefig(f"{folder}/svd_projection_scatter_plot.png", dpi=300)
@@ -106,15 +117,15 @@ def calc_svd(folder, parameters):
 
     # save these analyzed data for further easy plotting
     # svd data
-    data = np.column_stack((q, svd.S, svd.Vh[0], svd.Vh[1], svd.Vh[2]))
-    column_names = ['q', 'svd.S', 'svd.Vh[0]', 'svd.Vh[1]', 'svd.Vh[2]']
-    np.savetxt(f"{folder}/data_L{L}_svd.txt", data, delimiter=',', header=','.join(column_names), comments='')
+    # data = np.column_stack((qBx.flatten(), svd.S, svd.Vh[0], svd.Vh[1], svd.Vh[2]))
+    # column_names = ['qB', 'svd.S', 'svd.Vh[0]', 'svd.Vh[1]', 'svd.Vh[2]']
+    # np.savetxt(f"{folder}/data_L{L}_svd.txt", data, delimiter=',', header=','.join(column_names), comments='')
 
     #  svd projection data
     # save svd projection data
-    data = np.column_stack((all_features, all_Delta_SqV[:, 0], all_Delta_SqV[:, 1], all_Delta_SqV[:, 2]))
+    data = np.column_stack((all_features, SqV[:, 0], SqV[:, 1], SqV[:, 2]))
     column_names = all_feature_names + ['sqv[0]', 'sqv[1]', 'sqv[2]']
-    np.savetxt(f"{folder}/data_L{L}_svd_projection.txt", data, delimiter=',', header=','.join(column_names), comments='')
+    np.savetxt(f"{folder}/data_svd_projection.txt", data, delimiter=',', header=','.join(column_names), comments='')
 
 
 def calc_Sq_pair_distance_distribution(all_Delta_Sq, max_z, bin_num):
@@ -186,9 +197,10 @@ def calc_Sq_autocorrelation(mu, all_Delta_Sq, max_z, bin_num):
 
 
 def plot_pddf_acf(folder, parameters, max_z=2, n_bin=100):
-    # plot pair distance distribution of Delta Sq
-    segment_type, all_features, all_feature_names, all_Delta_Sq, all_Delta_Sq_err, q = read_Delta_Sq_data(folder, parameters)
-    p_z, z = calc_Sq_pair_distance_distribution(all_Delta_Sq, max_z, n_bin)
+
+    all_features, all_feature_names, all_Sq2D_flatten, qB = get_all_feature_Sq2D_data(folder, parameters)
+
+    p_z, z = calc_Sq_pair_distance_distribution(all_Sq2D_flatten, max_z, n_bin)
 
     plt.figure(figsize=(8, 6))
     plt.plot(z, p_z/np.max(p_z), label="p_z/max(p_z)")
@@ -196,7 +208,7 @@ def plot_pddf_acf(folder, parameters, max_z=2, n_bin=100):
     acf_data = []
     for i in range(len(all_feature_names)):
         # pass
-        acf_mu, z = calc_Sq_autocorrelation(all_features[:, i], all_Delta_Sq, max_z, n_bin)
+        acf_mu, z = calc_Sq_autocorrelation(all_features[:, i], all_Sq2D_flatten, max_z, n_bin)
         plt.plot(z, acf_mu, label=f"acf_{all_feature_names[i]}")
         acf_data.append(acf_mu)
 
@@ -204,47 +216,28 @@ def plot_pddf_acf(folder, parameters, max_z=2, n_bin=100):
     plt.ylabel("Value")
     plt.title("Pair Distance Distribution and Autocorrelation")
     plt.legend()
-    plt.savefig(f"{folder}/{segment_type}pddf_acf.png", dpi=300)
+    plt.savefig(f"{folder}/pddf_acf.png", dpi=300)
     plt.close()
 
     # save these data to file for futher easy plotting
 
     data = np.column_stack((z, p_z, *acf_data))
     column_names = ['z', 'p_z', *['acf_' + feature_name for feature_name in all_feature_names]]
-    np.savetxt(f"{folder}/data_{segment_type}_pddf_acf.txt", data, delimiter=',', header=','.join(column_names), comments='')
+    np.savetxt(f"{folder}/data_pddf_acf.txt", data, delimiter=',', header=','.join(column_names), comments='')
 
 
-def GaussianProcess_optimization(folder, parameters_train, all_feature_names):
-    segment_type, all_features, all_feature_names, all_Delta_Sq, all_Delta_Sq_err, q = read_Delta_Sq_data(folder, parameters_train)
-    grid_size = 40
+def GaussianProcess_optimization(folder, parameters_train):
+    all_features, all_feature_names, all_Sq2D_flatten, qB = get_all_feature_Sq2D_data(folder, parameters_train)
+    grid_size = 30
 
-    # ["lnLmu", "lnLsig", "Kt", "Kb", "Rf", "Rg2", "L", "L2", "PDI"]
-    inplane_theta_per_feature = {  # "L": (np.logspace(-1, 1, grid_size), np.logspace(-11, -8, grid_size)),
-        # "Rf": (np.logspace(-1, 2, grid_size), np.logspace(-4, -1, grid_size)), # old Rf
-        # "Rg": (np.logspace(2, 1, grid_size), np.logspace(-6, -4, grid_size)),  # under Delta Sq space
-        # "Lmu": (np.logspace(-2, 2, grid_size), np.logspace(-4, 0, grid_size)),
-        "L": (np.logspace(-1, 1, grid_size), np.logspace(-3, -1, grid_size)),
-        "Rf": (np.logspace(-1, 1, grid_size), np.logspace(-3, -1, grid_size)),
-        "Rg2": (np.logspace(-1, 1, grid_size), np.logspace(-3, -1, grid_size)),
-
-
-        # "Lsig": (np.logspace(-10, -2, grid_size), np.logspace(-10, -1, grid_size)),
-        # "Kt": (np.logspace(-5, 1, grid_size), np.logspace(-10, 1, grid_size)),
-        # "Kb": (np.logspace(-1, 1, grid_size), np.logspace(-11, -8, grid_size)),
+    theta_per_feature = {
+        "kappa": (np.logspace(-1, 0, grid_size), np.logspace(-3, -2, grid_size)),
+        #"f": (np.logspace(-1, 0, grid_size), np.logspace(-3, -2, grid_size)),
+        #"gL": (np.logspace(-1, 0, grid_size), np.logspace(-3, -2, grid_size)),
+        #"R2": (np.logspace(0, 0.5, grid_size), np.logspace(-5, -4, grid_size)),
+        #"Rg2": (np.logspace(0.2, 0.4, grid_size), np.logspace(-7, -5, grid_size)),
+        #"Sxz": (np.logspace(0.3, 0.6, grid_size), np.logspace(-7, -5, grid_size)), # to run
     }
-    outofplane_theta_per_feature = {  # "Lmu": (np.logspace(-2, 2, grid_size), np.logspace(-4, 0, grid_size)),
-        "L": (np.logspace(-1, 1, grid_size), np.logspace(-3, -1, grid_size)),
-        "Rf": (np.logspace(-1, 1, grid_size), np.logspace(-3, -1, grid_size)),
-        "Rg2": (np.logspace(-1, 1, grid_size), np.logspace(-3, -1, grid_size)),
-        # "Rg": (np.logspace(-2, 2, grid_size), np.logspace(-4, -1, grid_size)),
-    }
-
-    if (segment_type == "inplane_twist"):
-        theta_per_feature = inplane_theta_per_feature
-    elif (segment_type == "outofplane_twist"):
-        theta_per_feature = outofplane_theta_per_feature
-    else:
-        print("segment_type not recognized\n")
 
     # feature normalization
     all_feature_mean = np.mean(all_features, axis=0)
@@ -259,16 +252,12 @@ def GaussianProcess_optimization(folder, parameters_train, all_feature_names):
         print("training: ", feature_name)
         feature_index = all_feature_names.index(feature_name)
 
-        F_learn = all_Delta_Sq
-
-        # if( feature_name == "Rg"):
-        #    F_learn = np.delete(all_features, feature_index, axis=1)
-        #    print("F_learn(Rg)", F_learn)
+        F_learn = all_Sq2D_flatten
 
         # witout theta optimization
         kernel = RBF(1) + WhiteKernel(1)
         gp = GaussianProcessRegressor(kernel=kernel, alpha=0.0, optimizer=None).fit(F_learn, all_features[:, feature_index])
-        print(" all_features[:, feature_index]", all_features[:, feature_index])
+        #print(" all_features[:, feature_index]", all_features[:, feature_index])
 
         print("GPML kernel: %s" % gp.kernel_)
         gp_theta = np.exp(gp.kernel_.theta)
@@ -279,11 +268,14 @@ def GaussianProcess_optimization(folder, parameters_train, all_feature_names):
         # calc Log likelihood
         ax = axs[all_feature_names.index(feature_name)]
         Theta0, Theta1 = np.meshgrid(theta0, theta1)
-        LML = [[gp.log_marginal_likelihood(np.log([Theta0[i, j], Theta1[i, j]])) for i in range(Theta0.shape[0])] for j in range(Theta0.shape[1])]
+        LML = [[0 for j in range(Theta0.shape[1])] for i in range(Theta0.shape[0])]
+        for i in range(Theta0.shape[0]):
+            for j in range(Theta0.shape[1]):
+                LML[i][j] = gp.log_marginal_likelihood(np.log([Theta0[i, j], Theta1[i, j]]))
+                print(f"Calculating LML: i={i}/{Theta0.shape[0]}, j={j}/{Theta0.shape[1]}, LML={LML[i][j]}", end='\r')
         # reason for np.log here is the theta is log-transformed hyperparameters (https://github.com/scikit-learn/scikit-learn/blob/5491dc695/sklearn/gaussian_process/kernels.py#L1531) line (289)
-        LML = np.array(LML).T
 
-        ax.contour(Theta0, Theta1, LML, levels=1000)
+        ax.contour(Theta0, Theta1, LML, levels=200)
         # find optimized theta0, theta1, using the above contour as guidanve
         kernel = RBF(theta0[grid_size//2], (theta0[0], theta0[-1])) + WhiteKernel(theta1[grid_size//2], (theta1[0], theta1[-1]))
         gp = GaussianProcessRegressor(kernel=kernel, alpha=0.0, n_restarts_optimizer=10).fit(F_learn, all_features[:, feature_index])
@@ -307,10 +299,17 @@ def GaussianProcess_optimization(folder, parameters_train, all_feature_names):
 
         data = np.column_stack(([gp_theta[0]] * len(theta0), [gp_theta[1]] * len(theta1), theta0, theta1, np.array(LML).T))
         column_names = ['gp_theta0', 'gp_theta1', 'theta0', 'theta1', 'LML']
-        np.savetxt(f"{folder}/data_{segment_type}_{feature_name}_LML.txt", data, delimiter=',', header=','.join(column_names), comments='')
+        np.savetxt(f"{folder}/data_{feature_name}_LML.txt", data, delimiter=',', header=','.join(column_names), comments='')
+        with open(f"{folder}/gp_{feature_name}.pkl", 'wb') as f:
+            pickle.dump(gp, f)
+
+    # Save average and standard deviation per feature
+    avg_std_data = np.column_stack((all_feature_names, all_feature_mean, all_feature_std))
+    column_names = ['Feature', 'Mean', 'Std']
+    np.savetxt(f"{folder}/data_feature_avg_std.txt", avg_std_data, delimiter=',', header=','.join(column_names), comments='', fmt='%s')
 
     plt.tight_layout()
-    plt.savefig(f"{folder}/{segment_type}LML_subplots.png", dpi=300)
+    plt.savefig(f"{folder}/LML_subplots.png", dpi=300)
     # plt.show()
     plt.close()
 
@@ -318,54 +317,27 @@ def GaussianProcess_optimization(folder, parameters_train, all_feature_names):
     return all_feature_mean, all_feature_std, all_gp_per_feature
 
 
-def GaussianProcess_prediction(folder, parameters_test, all_feature_names, all_feature_mean, all_feature_std, all_gp_per_feature):
-    segment_type, all_features, all_feature_names, all_Delta_Sq, all_Delta_Sq_err, q = read_Delta_Sq_data(folder, parameters_test)
+def read_gp_and_feature_stats(folder):
+    all_feature_names = ["kappa", "f", "gL", "R2", "Rg2", "Sxx", "Syy", "Szz", "Sxy", "Sxz", "Syz"]
+    all_feature_mean = np.genfromtxt(f"{folder}/data_feature_avg_std.txt", delimiter=',', skip_header=1, usecols=1)
+    all_feature_std = np.genfromtxt(f"{folder}/data_feature_avg_std.txt", delimiter=',', skip_header=1, usecols=2)
+    all_gp_per_feature = {}
+    for feature_name in all_feature_names:
+        if os.path.exists(f"{folder}/gp_{feature_name}.pkl"):
+            with open(f"{folder}/gp_{feature_name}.pkl", 'rb') as f:
+                all_gp_per_feature[feature_name] = pickle.load(f)
+    return all_feature_names, all_feature_mean, all_feature_std, all_gp_per_feature
 
-    # normalize test data features using the save scaling as the training data
-    # all_features = (all_features - all_feature_mean) / all_feature_std
 
-    '''
-    grid_size = 40
-    theta_per_feature = {"Rf": (np.logspace(0, 3, grid_size), np.logspace(-6, -3, grid_size)),
-                         "Rg": (np.logspace(-1.5, 1.2, grid_size), np.logspace(-5.5, -1, grid_size)), # under Delta Sq space
-                         #"Rg": (np.logspace(-2, 2, grid_size), np.logspace(-4, -1, grid_size)), # learn Rg using L and Rf
-                         "L": (np.logspace(0, 1, grid_size), np.logspace(-12, -9, grid_size))
-                         }
-    '''
+def GaussianProcess_prediction(folder, parameters_test, all_feature_mean, all_feature_std, all_gp_per_feature):
+    all_features, all_feature_names, all_Sq2D_flatten, qB = get_all_feature_Sq2D_data(folder, parameters_test)
+
     plt.figure()
 
     fig, axs = plt.subplots(1, len(all_feature_names), figsize=(6*len(all_feature_names), 6))
     for feature_name, gp in all_gp_per_feature.items():
         feature_index = all_feature_names.index(feature_name)
         Y = all_features[:, feature_index]
-        '''
-        if (feature_name == "L"):
-            all_features[:, feature_index] = np.power(all_features[:, feature_index], 1/3)
-        '''
-        # F_learn = all_Delta_Sq
-
-        # if( feature_name == "Rg"):
-        #    F_learn = np.delete(all_features, feature_index, axis=1)
-        #    print("F_learn(Rg)", F_learn)
-
-        '''
-        concate_data = np.concatenate((all_features[:, feature_index].reshape(-1, 1), F_learn), axis=1)
-        print("all_features[:, feature_index]", all_features[:, feature_index])
-        print("concate_data", concate_data)
-        random.shuffle(concate_data)
-        train_data = concate_data[:int(len(concate_data)*0.7)]
-        print("train_data", train_data)
-        test_data = concate_data[int(len(concate_data)*0.3):]
-        '''
-
-        # find optimized theta0, theta1, using the above contour as guidanve
-        # kernel = RBF(theta0[grid_size//2], (theta0[0], theta0[-1])) + WhiteKernel(theta1[grid_size//2], (theta1[0], theta1[-1]))
-        # kernel = RBF(all_gp_theta[feature_index][0], length_scale_bounds="fixed") + WhiteKernel(all_gp_theta[feature_index][1], noise_level_bounds="fixed")
-        # use optimized theta0, theta1 from training data
-
-        # gp = GaussianProcessRegressor(kernel=kernel, alpha=0.0, n_restarts_optimizer=10).fit(train_data[:, 1:], train_data[:, 0])
-        # gp = GaussianProcessRegressor(kernel=kernel, alpha=0.0, n_restarts_optimizer=10)
-        # gp = all_gp_per_feature[feature_name]
 
         print("GPML kernel: %s" % gp.kernel_)
         gp_theta = np.exp(gp.kernel_.theta)  # gp.kernel_.theta return log transformed theta
@@ -373,20 +345,13 @@ def GaussianProcess_prediction(folder, parameters_test, all_feature_names, all_f
         print("Kernel parameters:", gp_theta)
         print("Log-marginal-likelihood: %.3f" % gp.log_marginal_likelihood(gp.kernel_.theta))
 
-        Y_predict, Y_predict_err = gp.predict(all_Delta_Sq, return_std=True)
+        Y_predict, Y_predict_err = gp.predict(all_Sq2D_flatten, return_std=True)
         # print("np.shape(test_data[:, 0])", np.shape(test_data[:, 0]))
-        print("np.shape(all_Delta_Sq)", np.shape(all_Delta_Sq))
+        print("np.shape(all_Sq2D_flatten)", np.shape(all_Sq2D_flatten))
         print("np.shape(Y_predict)", np.shape(Y_predict))
 
         Y_predict = Y_predict * all_feature_std[feature_index] + all_feature_mean[feature_index]
         Y_predict_err = Y_predict_err * all_feature_std[feature_index]
-        # convert L back to L from L^1/3
-        '''
-        if (feature_name == "L"):
-            test_data[:, 0] = np.power(test_data[:, 0], 3)
-            Y_predict_err = 3* Y_predict_err * np.power(Y_predict, 2)
-            Y_predict = np.power(Y_predict, 3)
-        '''
 
         axs[feature_index].errorbar(Y, Y_predict, yerr=Y_predict_err, marker="o", markerfacecolor="none", markersize=3, linestyle="none")
         axs[feature_index].plot(Y, Y, "--")
@@ -400,9 +365,9 @@ def GaussianProcess_prediction(folder, parameters_test, all_feature_names, all_f
         # save data to file
         data = np.column_stack((Y, Y_predict, Y_predict_err))
         column_names = [feature_name, "ML predicted", "ML predicted uncertainty"]
-        np.savetxt(f"{folder}/data_{segment_type}_{feature_name}_prediction.txt", data, delimiter=',', header=','.join(column_names), comments='')
+        np.savetxt(f"{folder}/data_{feature_name}_prediction.txt", data, delimiter=',', header=','.join(column_names), comments='')
 
-    plt.savefig(f"{folder}/{segment_type}_prediction.png", dpi=300)
+    plt.savefig(f"{folder}/prediction.png", dpi=300)
     plt.close()
 
 
@@ -433,8 +398,8 @@ def calc_Sq_fitted_Rg2(folder, parameters_test, all_feature_names):
             Rg2s[-1].append(Rg2)
             Rg2_errs[-1].append(Rg2_err)
 
-        plt.scatter(MC_Rg2, Rg2s[-1], alpha=0.5,label=f"qf={q[qfn-1]}")
-    plt.plot(MC_Rg2,MC_Rg2,"k--")
+        plt.scatter(MC_Rg2, Rg2s[-1], alpha=0.5, label=f"qf={q[qfn-1]}")
+    plt.plot(MC_Rg2, MC_Rg2, "k--")
     plt.xlabel("MC Rg2")
     plt.ylabel("Fitted Rg2")
     plt.legend()

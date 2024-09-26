@@ -2,7 +2,7 @@
 from config_plot import *
 from obs_plot import *
 from Sq_plot import *
-
+from ML_plot import *
 def main():
 
     # for model paper
@@ -13,15 +13,23 @@ def main():
 
     #plot_obs_f_3panel()
     #plot_obs_gamma_3panel()
+    #plot_obs_f_3panel_sq()
 
     #plot_Sq()
     #plot_Sq2D()
+    #plot_Sq2D_f_conf()
+    #plot_Sq2D_g()
     #plot_TOC()
 
     # for ML paper
-    plot_Sq2D_kappa()
+    #plot_Sq2D_kappa()
     #plot_config_fg()
     #plot_Sq2D_fg()
+
+    plot_SVD_data()
+    plot_SVD_feature_data()
+    #plot_LML_contour()
+    #plot_GPR_prediction()
 
 
 # todo: 1. increas hspace between subplot

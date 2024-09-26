@@ -232,6 +232,100 @@ def plot_Sq2D_kappa(tex_lw=240.71031, ppi=72):
     plt.close()
 
 
+def plot_Sq2D_f_conf(tex_lw=240.71031, ppi=72):
+    L = 200
+    kappa = 10.0
+    f = 0.00
+    f = [0.00, 0.10, 0.20]
+    gL = 0.00
+    folder = "../data/20240920_precision"
+    fig, axs = plt.subplots(2, len(f), figsize=(tex_lw / ppi * 1, tex_lw / ppi * 0.85), sharex="row", sharey="row")
+    plt.rc("text", usetex=True)
+    plt.rc("text.latex", preamble=r"\usepackage{physics}")
+
+    # plot Sq2D for various kappa
+    for i in range(len(f)):
+        # config
+        finfo = f"L{L:.0f}_kappa{kappa:.0f}_f{f[i]:.2f}_gL{gL:.2f}"
+        for k in range(30):
+            filename = f"{folder}/{finfo}/config_{k}.csv"
+            flip = False
+            if (i == 0):
+                flip = True
+            ax_plot_2dconfig_from_file(axs[0, i], filename, "", 0, flip=flip)
+        axs[0, i].set_aspect("equal")
+        axs[0, i].set_axis_off()
+
+        # 2D Sq
+        filename = f"{folder}/obs_L{L:.0f}_kappa{kappa:.0f}_f{f[i]:.2f}_gL{gL:.2f}.csv"
+        Sq2D, qB = get_Sq2D_data(filename)
+        qBx, qBz = np.meshgrid(qB, qB)
+        print(np.min(Sq2D), np.max(Sq2D))
+        axs[1, i].pcolormesh(qBx, qBz, np.log10(Sq2D), vmax=0, vmin=-3, cmap="rainbow", shading='gouraud')
+        Cs = axs[1, i].contour(qBx, qBz, np.log10(Sq2D), vmax=0, vmin=-3, levels=np.linspace(-3, 0, 7), colors="gray", linewidths=0.5, linestyle=":")
+        axs[1, i].clabel(Cs, Cs.levels, inline=True, fontsize=7, fmt="%1.1f", colors="black")
+        axs[1, i].set_xlabel(r"$Q_x$", fontsize=9, labelpad=-0.0)
+        axs[1, i].tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=False, labelsize=7)
+        axs[1, i].xaxis.set_major_locator(plt.MultipleLocator(0.5))
+        axs[1, i].xaxis.set_minor_locator(plt.MultipleLocator(0.25))
+        axs[1, i].yaxis.set_major_locator(plt.MultipleLocator(0.5))
+        axs[1, i].yaxis.set_minor_locator(plt.MultipleLocator(0.25))
+        axs[1, i].set_title(r"$f = $"+f"{f[i]:.1f}", fontsize=9, pad=2.5)
+        axs[1, i].set_aspect("equal")
+
+    axs[1,0].set_ylabel(r"$Q_z$", fontsize=9, labelpad=-0.0)
+    axs[1,0].tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=True, labelsize=7)
+
+    plt.tight_layout(pad=0.2)
+    plt.savefig("./figures/Sq2D_f_conf.pdf", format="pdf")
+    plt.savefig("./figures/Sq2D_f_conf.png", format="png", dpi=300)
+    plt.show()
+    plt.close()
+
+
+def plot_Sq2D_g(tex_lw=240.71031, ppi=72):
+    L = 200
+    kappa = 10.0
+    f = 0.00
+    gL = 0.00
+    gL = [0.00, 0.30, 0.90]
+    folder = "../data/20240920_precision"
+    fig, axs = plt.subplots(1, len(gL), figsize=(tex_lw / ppi * 1, tex_lw / ppi * 0.42), sharex="row", sharey="row")
+    plt.rc("text", usetex=True)
+    plt.rc("text.latex", preamble=r"\usepackage{physics}")
+
+    # plot Sq2D for various gL
+    for i in range(len(gL)):
+        # config
+
+        # 2DSq
+
+        filename = f"{folder}/obs_L{L:.0f}_kappa{kappa:.0f}_f{f:.2f}_gL{gL[i]:.2f}.csv"
+        Sq2D, qB = get_Sq2D_data(filename)
+        qBx, qBz = np.meshgrid(qB, qB)
+        print(np.min(Sq2D), np.max(Sq2D))
+        axs[i].pcolormesh(qBx, qBz, np.log10(Sq2D), vmax=0, vmin=-3, cmap="rainbow", shading='gouraud')
+        Cs = axs[i].contour(qBx, qBz, np.log10(Sq2D), vmax=0, vmin=-3, levels=np.linspace(-3, 0, 7), colors="gray", linewidths=0.5, linestyle=":")
+        axs[i].clabel(Cs, Cs.levels, inline=True, fontsize=7, fmt="%1.1f", colors="black")
+        axs[i].set_xlabel(r"$Q_x$", fontsize=9, labelpad=-0.0)
+        axs[i].tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=False, labelsize=7)
+        axs[i].xaxis.set_major_locator(plt.MultipleLocator(0.5))
+        axs[i].xaxis.set_minor_locator(plt.MultipleLocator(0.25))
+        axs[i].yaxis.set_major_locator(plt.MultipleLocator(0.5))
+        axs[i].yaxis.set_minor_locator(plt.MultipleLocator(0.25))
+        axs[i].set_title(r"$\gamma L = $"+f"{gL[i]:.1f}", fontsize=9, pad=2.5)
+        axs[i].set_aspect("equal")
+
+    axs[0].set_ylabel(r"$Q_z$", fontsize=9, labelpad=-0.0)
+    axs[0].tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=True, labelsize=7)
+
+    plt.tight_layout(pad=0.2)
+    plt.savefig("./figures/Sq2D_g.pdf", format="pdf")
+    plt.savefig("./figures/Sq2D_g.png", format="png", dpi=300)
+    plt.show()
+    plt.close()
+
+
 def plot_config_fg(tex_lw=240.71031, ppi=72):
 
     L = 200
@@ -263,6 +357,9 @@ def plot_config_fg(tex_lw=240.71031, ppi=72):
     plt.savefig("./figures/config_fg.png", format="png", dpi=300)
     plt.show()
     plt.close()
+
+
+
 
 
 def plot_Sq2D_fg(tex_lw=240.71031, ppi=72):

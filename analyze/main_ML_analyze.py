@@ -10,25 +10,32 @@ import time
 def main():
 
     print("analyzing data using ML model")
-    folder = "../data/20240913_random"
-    rand_max = 96*6
+    folder = "../data/20240924_random"
+    rand_num = 5500
+    rand_max = 4500
     L = 200
-    parameters = [[L, rand_num] for rand_num in range(rand_max)]
-
+    parameters = []
+    for i in range(rand_num):
+        filename = f"{folder}/obs_L{L}_random_run{i}.csv"
+        if os.path.exists(filename):
+            parameters.append([L, i])
+        if len(parameters) >= rand_max:
+            break
     print("parameters", parameters)
     print("total number of parameters", len(parameters))
 
-    calc_svd(folder, parameters)
-    # plot_pddf_acf(folder, parameters, max_z=15, n_bin=100)
-
+    #calc_svd(folder, parameters)
+    #plot_pddf_acf(folder, parameters, max_z=5, n_bin=100)
+    #return 0
     random.shuffle(parameters)
     parameters_train = parameters[:int(0.7*len(parameters))]
     parameters_test = parameters[int(0.7*len(parameters)):]
 
-    # all_feature_mean, all_feature_std, all_gp_per_feature = GaussianProcess_optimization(folder, parameters_train, all_feature_names)
-    # GaussianProcess_prediction(folder, parameters_test, all_feature_names, all_feature_mean, all_feature_std, all_gp_per_feature)
+    all_feature_mean, all_feature_std, all_gp_per_feature = GaussianProcess_optimization(folder, parameters_train)
+    all_feature_names, all_feature_mean, all_feature_std, all_gp_per_feature = read_gp_and_feature_stats(folder)
 
-    calc_Sq_fitted_Rg2(folder, parameters_test, all_feature_names)
+    GaussianProcess_prediction(folder, parameters_test, all_feature_mean, all_feature_std, all_gp_per_feature)
+
 
 
 if __name__ == "__main__":

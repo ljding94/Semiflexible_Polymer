@@ -159,7 +159,7 @@ def ax_plot_tan_rot_update(ax, yshift=-4):
 
 def plot_config_update_demo(tex_lw=240.71031, ppi=72):
 
-    fig = plt.figure(figsize=(tex_lw / ppi * 1, tex_lw / ppi * 0.9))
+    fig = plt.figure(figsize=(tex_lw / ppi * 1, tex_lw / ppi * 0.75))
     plt.rc("text", usetex=True)
     plt.rc("text.latex", preamble=r"\usepackage{physics}")
     # for outofplane twist (2D CANAL)
@@ -170,7 +170,7 @@ def plot_config_update_demo(tex_lw=240.71031, ppi=72):
     # con_rot_file_post = "config_data/config_con_rot_post.csv"
     ax_plot_con_rot_update(ax)  # , 35, con_rot_file_pre, con_rot_file_post)
 
-    ax_plot_tan_rot_update(ax, -2.5)
+    ax_plot_tan_rot_update(ax, -1.8)
     ax.set_xlim(-0.5, 6)
     ax.axis("equal")
     ax.set_axis_off()
@@ -179,15 +179,16 @@ def plot_config_update_demo(tex_lw=240.71031, ppi=72):
     bbox = ax.get_position()
     # annotation
     x = bbox.x0 + bbox.width*(0.0)
-    y = bbox.y0 + bbox.height*(0.9)
+    y = bbox.y0 + bbox.height*(0.95)
     fig.text(x, y, r"$(a)$", ha='center', va='center', fontsize=9)
     x = bbox.x0 + bbox.width*(0.0)
     y = bbox.y0 + bbox.height*(0.4)
     fig.text(x, y, r"$(b)$", ha='center', va='center', fontsize=9)
 
-    plt.tight_layout()
+    plt.tight_layout(pad=0.2)
     # plt.tight_layout(pad=0.1, h_pad=-1.4, w_pad=-1)
     # plt.tight_layout(h_pad=-2, w_pad=-6)
-    # plt.show()
+
     plt.savefig("figures/config_update_demo.pdf", format="pdf")
+    plt.show()
     plt.close()
