@@ -21,14 +21,13 @@ def main():
     #plot_Sq2D_g()
     #plot_TOC()
 
-    # for ML inversion paper
+    # for ML paper
     #plot_Sq2D_kappa()
     #plot_config_fg()
     #plot_Sq2D_fg()
-    #plot_Sq2D_config_fg() # may use
 
-    #plot_SVD_data()
-    #plot_SVD_feature_data()
+    plot_SVD_data()
+    plot_SVD_feature_data()
     #plot_LML_contour()
     #plot_GPR_prediction()
 

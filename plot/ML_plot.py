@@ -2,7 +2,6 @@ from scipy import stats
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-from sklearn.metrics import r2_score
 
 
 def get_all_feature_Sq2D_data(folder, parameters):
@@ -36,7 +35,6 @@ def get_all_feature_Sq2D_data(folder, parameters):
         qB = data[2, 21:]
         Sq2D = data[6:, 21:]
         all_Sq2D_flatten.append(Sq2D.flatten())
-        print("Sq2D.shape", Sq2D.shape)
 
     all_feature = np.array([all_kappa, all_f, all_gL, all_R2, all_Rg2, all_Sxx, all_Syy, all_Szz, all_Sxy, all_Sxz, all_Syz])
     all_feature_name = ["kappa", "f", "gL", "R2", "Rg2", "Sxx", "Syy", "Szz", "Sxy", "Sxz", "Syz"]
@@ -76,7 +74,7 @@ def calc_maximum_profile_likelihood(svdS):
 
 
 def plot_SVD_data(tex_lw=240.71031, ppi=72):
-    folder = "../data/20240918_random"
+    folder = "../data/20240924_random"
     rand_max = 1024
     L = 200
     parameters = [[L, rand_num] for rand_num in range(rand_max)]
@@ -138,11 +136,6 @@ def plot_SVD_data(tex_lw=240.71031, ppi=72):
     cbar.set_ticks(np.linspace(vmin, vmax, 5))
     cbar.ax.tick_params(labelsize=7, direction="in", rotation=45)
 
-    ax00.text(0.9, 0.15, r"$(a)$", fontsize=9, transform=ax00.transAxes, color='black')
-    ax10.text(0.7, 0.15, r"$(b)$", fontsize=9, transform=ax10.transAxes, color='black')
-    ax11.text(0.7, 0.15, r"$(c)$", fontsize=9, transform=ax11.transAxes, color='black')
-    ax12.text(0.7, 0.15, r"$(d)$", fontsize=9, transform=ax12.transAxes, color='black')
-
     plt.tight_layout(pad=0.1)
     plt.savefig("figures/SVD.pdf", dpi=300)
 
@@ -150,12 +143,12 @@ def plot_SVD_data(tex_lw=240.71031, ppi=72):
 
 
 def plot_SVD_feature_data(tex_lw=240.71031, ppi=72):
-    folder = "../data/20240918_random"
+    folder = "../data/20240924_random"
     all_feature, sqv0, sqv1, sqv2 = read_SVD_data(folder)
     all_feature_name = ["kappa", "f", "gL", "R2", "Rg2", "Sxx", "Syy", "Szz", "Sxy", "Sxz", "Syz"]
-    feature_to_tex = {"kappa": r"$\kappa$", "f": r"$f$", "gL": r"$\gamma L$", "R2": r"$R^2/L^2$", "Rg2": r"$R_g^2/L$", "Sxz": r"$R_{xz}$"}
+    feature_to_tex = {"kappa": r"$\kappa$", "f": r"$f$", "gL": r"$\gamma L$", "R2": r"$R^2/L^2$", "Rg2": r"$R_g^2/L$", "Sxz": r"$S_{xz}$"}
 
-    fig = plt.figure(figsize=(tex_lw / ppi * 1, tex_lw / ppi * 1.1))
+    fig = plt.figure(figsize=(tex_lw / ppi * 1, tex_lw / ppi * 1.15))
     plt.rc("text", usetex=True)
     plt.rc("text.latex", preamble=r"\usepackage{physics}")
 
@@ -186,7 +179,7 @@ def plot_SVD_feature_data(tex_lw=240.71031, ppi=72):
         if (feature_name == "Rg2"):
             mu /= L
         ax = axs[i]
-        scatter = ax.scatter(sqv0, sqv1, sqv2, s=0.5, c=mu, cmap="rainbow", rasterized=True)
+        scatter = ax.scatter(sqv0, sqv1, sqv2, s=0.5, c=mu, cmap="rainbow")
         ax.view_init(elev=15., azim=-105)
 
         ax.set_xlabel(r"$FV0$", fontsize=9, labelpad=-12, rotation=0)
@@ -221,15 +214,9 @@ def plot_SVD_feature_data(tex_lw=240.71031, ppi=72):
 
         ax.grid(True, which='minor')
 
-    axs = [ax11, ax12, ax13, ax21, ax22, ax23]
-    textlabel = [r"$(a)$", r"$(b)$", r"$(c)$", r"$(d)$", r"$(e)$", r"$(f)$"]
-    for i in range(len(axs)):
-        axs[i].text2D(0.7, 0.8, textlabel[i], fontsize=9, transform=axs[i].transAxes, color='black')
-
     # plt.tight_layout( h_pad=0.2, w_pad=1.7) #, h_pad=-3, w_pad=2)
     plt.tight_layout(pad=0.1, w_pad=1.2)
     plt.savefig("figures/SVD_feature.pdf", format="pdf", dpi=300)
-    plt.savefig("figures/SVD_feature.png", format="png", dpi=300)
     plt.show()
     plt.close()
 
@@ -241,8 +228,8 @@ def get_LML_date(folder, feature):
 
 
 def plot_LML_contour(tex_lw=240.71031, ppi=72):
-    folder = "../data/20240918_random"
-    feature_to_tex = {"kappa": r"$\kappa$", "f": r"$f$", "gL": r"$\gamma L$", "R2": r"$R^2/L^2$", "Rg2": r"$R_g^2/L$", "Sxz": r"$R_{xz}$"}
+    folder = "../data/20240916_random"
+    feature_to_tex = {"kappa": r"$\kappa$", "f": r"$f$", "gL": r"$\gamma L$", "R2": r"$R^2/L^2$", "Rg2": r"$R_g^2/L$", "Sxz": r"$S_{xz}$"}
     fig = plt.figure(figsize=(tex_lw / ppi * 1, tex_lw / ppi * 1.15))
     plt.rc("text", usetex=True)
     plt.rc("text.latex", preamble=r"\usepackage{physics}")
@@ -261,14 +248,14 @@ def plot_LML_contour(tex_lw=240.71031, ppi=72):
              (np.logspace(-1, 0, grid_size), np.logspace(-3, -2, grid_size)),
              (np.logspace(-1, 0, grid_size), np.logspace(-3, -2, grid_size)),
              (np.logspace(0, 0.5, grid_size), np.logspace(-5, -4, grid_size)),
-             (np.logspace(0.2, 0.4, grid_size), np.logspace(-7, -5, grid_size)),
-             (np.logspace(0.3, 0.6, grid_size), np.logspace(-7, -5, grid_size)),]
+             (np.logspace(0.2, 0.5, grid_size), np.logspace(-7, -6, grid_size)),
+             (np.logspace(0.3, 0.6, grid_size), np.logspace(-7, -6, grid_size)),]
     ticklabels = [((r"$10^{-1}$", r"$10^{0}$"), (r"$10^{-3}$", r"$10^{-2}$")),
                   ((r"$10^{-1}$", r"$10^{0}$"), (r"$10^{-3}$", r"$10^{-2}$")),
                   ((r"$10^{-1}$", r"$10^{0}$"), (r"$10^{-3}$", r"$10^{-2}$")),
                   ((r"$10^{0}$", r"$10^{0.5}$"), (r"$10^{-5}$", r"$10^{-4}$")),
-                  ((r"$10^{0.2}$", r"$10^{0.4}$"), (r"$10^{-7}$", r"$10^{-5}$")),
-                  ((r"$10^{0.3}$", r"$10^{0.6}$"), (r"$10^{-7}$", r"$10^{-5}$")),]
+                  ((r"$10^{0.2}$", r"$10^{0.5}$"), (r"$10^{-7}$", r"$10^{-6}$")),
+                  ((r"$10^{0.3}$", r"$10^{0.6}$"), (r"$10^{-7}$", r"$10^{-6}$")),]
 
     # "kappa": (np.logspace(-1, 0, grid_size), np.logspace(-3, -2, grid_size)),
     # "f": (np.logspace(-1, 0, grid_size), np.logspace(-3, -2, grid_size)),
@@ -281,7 +268,7 @@ def plot_LML_contour(tex_lw=240.71031, ppi=72):
         i += 1
         gp_theta0, gp_theta1, theta0, theta1, LML = get_LML_date(folder, feature_name)
         Theta0, Theta1 = np.meshgrid(theta0, theta1)
-        axs[i].contour(Theta0, Theta1, LML, levels=50)  # , cmap="summer")
+        axs[i].contour(Theta0, Theta1, LML, levels=50) #, cmap="summer")
         axs[i].plot([gp_theta0[0]], [gp_theta1[0]], 'x', color='black', markersize=5, markeredgewidth=1)  # , label=r"l=%.2e, $\sigma$=%.2e" % (gp_theta0[0], gp_theta1[0]))
         axs[i].set_xscale('log')
         axs[i].set_yscale('log')
@@ -305,10 +292,6 @@ def plot_LML_contour(tex_lw=240.71031, ppi=72):
                 tick.label1.set_visible(False)
         '''
         axs[i].legend(title=feature_tex, fontsize=9, frameon=False)
-
-    textlabel = [r"$(a)$", r"$(b)$", r"$(c)$", r"$(d)$", r"$(e)$", r"$(f)$"]
-    for i in range(len(axs)):
-        axs[i].text(0.8, 0.1, textlabel[i], fontsize=9, transform=axs[i].transAxes, color='black')
 
     axall = fig.add_subplot(111, frameon=False)
     axall.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
@@ -334,7 +317,7 @@ def plot_GPR_prediction(tex_lw=240.71031, ppi=72):
 
     all_feature, sqv0, sqv1, sqv2 = read_SVD_data(folder)
     all_feature_name = ["kappa", "f", "gL", "R2", "Rg2", "Sxx", "Syy", "Szz", "Sxy", "Sxz", "Syz"]
-    feature_to_tex = {"kappa": r"$\kappa$", "f": r"$f$", "gL": r"$\gamma L$", "R2": r"$R^2/L^2$", "Rg2": r"$R_g^2/L$", "Sxz": r"$R_{xz}$"}
+    feature_to_tex = {"kappa": r"$\kappa$", "f": r"$f$", "gL": r"$\gamma L$", "R2": r"$R^2/L^2$", "Rg2": r"$R_g^2/L$", "Sxz": r"$S_{xz}$"}
 
     fig = plt.figure(figsize=(tex_lw / ppi * 1, tex_lw / ppi * 1.15))
     plt.rc("text", usetex=True)
@@ -365,8 +348,7 @@ def plot_GPR_prediction(tex_lw=240.71031, ppi=72):
             mu_pred /= L
         relative_err = np.abs(mu-mu_pred)/mu
         norm = plt.Normalize(0, 1)
-        #axs[i].scatter(mu, mu_pred, s=0.5, marker=".", c=relative_err, cmap="rainbow", norm=norm)
-        axs[i].scatter(mu, mu_pred, s=0.5, marker=".", color = "royalblue", norm=norm)
+        axs[i].scatter(mu, mu_pred, s=0.5, marker=".", c=relative_err, cmap="rainbow", norm=norm)
         axs[i].plot(mu, mu, color="gray", linestyle="--", lw=0.25, alpha=0.5)
         axs[i].xaxis.set_major_locator(plt.MultipleLocator(major_locator[i]))
         axs[i].xaxis.set_minor_locator(plt.MultipleLocator(minor_locator[i]))
@@ -376,12 +358,6 @@ def plot_GPR_prediction(tex_lw=240.71031, ppi=72):
         axs[i].tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=True, labelsize=7)
         # axs[i].legend(title = feature_tex, fontsize=9, loc="upper left")
         axs[i].text(0.2, 0.7, feature_tex, transform=axs[i].transAxes, fontsize=9)
-        r2 = r2_score(mu, mu_pred)
-        axs[i].text(0.4, 0.1, rf"$r^2={r2:.5f}$", transform=axs[i].transAxes, fontsize=9)
-
-    textlabel = [r"$(a)$", r"$(b)$", r"$(c)$", r"$(d)$", r"$(e)$", r"$(f)$"]
-    for i in range(len(axs)):
-        axs[i].text(0.7, 0.3, textlabel[i], fontsize=9, transform=axs[i].transAxes, color='black')
 
     axall = fig.add_subplot(111, frameon=False)
     axall.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)

@@ -28,20 +28,17 @@ def ax_plot_config(ax, folder, param, zlim_shift, label):
     ax.set_aspect("equal")
 
 
-def ax_plot_2dconfig_from_file(ax, filename, color, xlim, randflip=1, flip=0, xshift=0, yshift=0):
+def ax_plot_2dconfig_from_file(ax, filename, color, xlim, flip=1, xshift=0, yshift=0):
     data = np.genfromtxt(filename, delimiter=',', skip_header=1)
     x, y, z = data[:, 0], data[:, 1], data[:, 2]
-    '''
     if (-xlim > np.min(x) or xlim < np.max(x)):
         print("np.min(x), np.max(x)", np.min(x), np.max(x))
     if (-xlim > np.min(y) or xlim < np.max(y)):
         print("np.min(y), np.max(y)", np.min(y), np.max(y))
     if (-xlim > np.min(z) or xlim < np.max(z)):
         print("np.min(z), np.max(z)", np.min(z), np.max(z))
-    '''
-    if (randflip and random.random() < 0.5):
-        x, z = -x, -z
-    if(flip and (z[-1]<0 or x[-1]<0)):
+
+    if (flip and random.random() < 0.5):
         x, z = -x, -z
 
     ymin = np.min(y)

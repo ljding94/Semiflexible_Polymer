@@ -61,8 +61,6 @@ def plot_polymer_config(filename, finfo, show=False):
     plt.close()
 
 
-
-
 def plot_MC_step(filename, finfo, show=False):
     data = np.genfromtxt(filename, delimiter=',', skip_header=4)
     E, Tb, X, Y, Z, R = data[:, 0], data[:, 1], data[:, 2], data[:, 3], data[:, 4], data[:, 5]
@@ -272,4 +270,3 @@ def calc_structure_factor(X, Y, r):
                 Sqk += 2.0*np.sin(qk*(i-j))/(qk*(i-j))/(n*n)
         Sq[k] += Sqk
     return np.array(Sq)
-

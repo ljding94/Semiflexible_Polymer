@@ -6,12 +6,13 @@ import sys
 import random
 import time
 
+
 def main():
 
     print("analyzing data using ML model")
     folder = "../data/20240924_random"
     rand_num = 5500
-    rand_max = 1600
+    rand_max = 4500
     L = 200
     parameters = []
     for i in range(rand_num):
@@ -25,7 +26,7 @@ def main():
 
     #calc_svd(folder, parameters)
     #plot_pddf_acf(folder, parameters, max_z=5, n_bin=100)
-    return 0
+    #return 0
     random.shuffle(parameters)
     parameters_train = parameters[:int(0.7*len(parameters))]
     parameters_test = parameters[int(0.7*len(parameters)):]
