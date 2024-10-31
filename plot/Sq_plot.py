@@ -225,6 +225,10 @@ def plot_Sq2D_kappa(tex_lw=240.71031, ppi=72):
     axs[0].set_ylabel(r"$Q_z$", fontsize=9, labelpad=-0.0)
     axs[0].tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=True, labelsize=7)
 
+    axs[0].text(0.75, 0.1, r"$(a)$", fontsize=9, transform=axs[0].transAxes, color='black')
+    axs[1].text(0.75, 0.1, r"$(b)$", fontsize=9, transform=axs[1].transAxes, color='black')
+    axs[2].text(0.75, 0.1, r"$(c)$", fontsize=9, transform=axs[2].transAxes, color='black')
+
     plt.tight_layout(pad=0.2)
     plt.savefig("./figures/Sq2D_kappa.pdf", format="pdf")
     plt.savefig("./figures/Sq2D_kappa.png", format="png", dpi=300)
@@ -273,8 +277,8 @@ def plot_Sq2D_f_conf(tex_lw=240.71031, ppi=72):
         axs[1, i].set_title(r"$f = $"+f"{f[i]:.1f}", fontsize=9, pad=2.5)
         axs[1, i].set_aspect("equal")
 
-    axs[1,0].set_ylabel(r"$Q_z$", fontsize=9, labelpad=-0.0)
-    axs[1,0].tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=True, labelsize=7)
+    axs[1, 0].set_ylabel(r"$Q_z$", fontsize=9, labelpad=-0.0)
+    axs[1, 0].tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=True, labelsize=7)
 
     plt.tight_layout(pad=0.2)
     plt.savefig("./figures/Sq2D_f_conf.pdf", format="pdf")
@@ -327,29 +331,51 @@ def plot_Sq2D_g(tex_lw=240.71031, ppi=72):
 
 
 def plot_config_fg(tex_lw=240.71031, ppi=72):
-
+    folder = "../data/20240920_precision"
     L = 200
     kappa = 10.0
-    f = [0.00, 0.20, 0.40]
-    gL = [0.00, 1.00, 2.00]
-    fig, axs = plt.subplots(len(f), len(gL), figsize=(tex_lw / ppi * 1, tex_lw / ppi * 1.1), sharex=True, sharey=True)
+    f = [0.00, 0.10, 0.20]
+    gL = [0.00, 0.30, 0.90]
+    fig, axs = plt.subplots(len(f), len(gL), figsize=(tex_lw / ppi * 1, tex_lw / ppi * 1))
+    # fig = plt.figure( figsize=(tex_lw / ppi * 1, tex_lw / ppi * 1))
+    # ax = fig.add_subplot(111)
     plt.rc("text", usetex=True)
     plt.rc("text.latex", preamble=r"\usepackage{physics}")
 
-    folder = "../data/20240913_precision"
+    dlim = 190
+    liml = np.array([[(-0.5, -0.5), (-0.3, -0.3), (-0.2, -0.2)],
+                     [(-0.25, -0.5), (-0.3, -0.3), (-0.2, -0.2)],
+                     [(-0.25, -0.5), (-0.3, -0.3), (-0.2, -0.2)]])
+
+    textlabel = [[r"$(a)$", r"$(b)$", r"$(c)$"],
+                 [r"$(d)$", r"$(e)$", r"$(f)$"],
+                 [r"$(g)$", r"$(h)$", r"$(i)$"]]
+
     for i in range(len(f)):
         for j in range(len(gL)):
             finfo = f"L{L}_kappa{kappa:.0f}_f{f[i]:.2f}_gL{gL[j]:.2f}"
             for k in range(30):
                 filename = f"{folder}/{finfo}/config_{k}.csv"
                 flip = False
-                if(i==0):
-                    flip=True
-                ax_plot_2dconfig_from_file(axs[i, j], filename, "", 0, flip=flip)
+                if (j != 0 and i == 0):
+                    flip = True
+                ax_plot_2dconfig_from_file(axs[i, j], filename, "", 0, randflip=0, flip=flip)
             axs[i, j].set_aspect("equal")
+            # axs[i, j].set_axis_off()
+            print("i,j", i, j)
+            print("xlim", liml[i, j][0], liml[i, j][0]+dlim)
+            print("ylim", liml[i, j][1], liml[i, j][1]+dlim)
+            axs[i, j].set_xlim(liml[i, j][0]*dlim, (1+liml[i, j][0])*dlim)
+            axs[i, j].set_ylim(liml[i, j][1]*dlim, (1+liml[i, j][1])*dlim)
+            axs[i, j].tick_params(which="both", direction="in", top="on", right="on", labelbottom=False, labelleft=False, labelsize=7)
+            axs[i, j].set_title(r"$f=$"+f"{f[i]:.1f}"+r",$\gamma L=$"+f"{gL[j]:.1f}", fontsize=9, pad=2.5)
             axs[i, j].set_axis_off()
+            axs[i, j].text(0.75, 0.1, textlabel[i][j], fontsize=9, transform=axs[i, j].transAxes, color='black')
 
-    # axs[0].tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=True, labelsize=7)
+    axs[0, 0].arrow(-0.4*dlim, -0.4*dlim, 0.2*dlim, 0, color=(0, 0, 1), lw=1, head_length=dlim*0.1, head_width=dlim*0.05)
+    axs[0, 0].text(-0.1*dlim, -0.4*dlim, r"$\vu{x}$", fontsize=9)
+    axs[0, 0].arrow(-0.4*dlim, -0.4*dlim, 0, 0.2*dlim, color=(1, 0, 0), lw=1, head_length=dlim*0.1, head_width=dlim*0.05)
+    axs[0, 0].text(-0.4*dlim, -0.1*dlim, r"$\vu{z}$", fontsize=9)
 
     plt.tight_layout(pad=0.2)
     # plt.subplots_adjust(wspace=0.05)
@@ -359,21 +385,22 @@ def plot_config_fg(tex_lw=240.71031, ppi=72):
     plt.close()
 
 
-
-
-
 def plot_Sq2D_fg(tex_lw=240.71031, ppi=72):
+    folder = "../data/20240920_precision"
     L = 200
     kappa = 10.0
-    f = [0.00, 0.20, 0.40]
-    gL = [0.00, 1.00, 2.00]
+    f = [0.00, 0.10, 0.20]
+    gL = [0.00, 0.30, 0.90]
     fig, axs = plt.subplots(len(f), len(gL), figsize=(tex_lw / ppi * 1, tex_lw / ppi * 1.1), sharex=True, sharey=True)
     plt.rc("text", usetex=True)
     plt.rc("text.latex", preamble=r"\usepackage{physics}")
 
+    textlabel = [[r"$(a)$", r"$(b)$", r"$(c)$"],
+                 [r"$(d)$", r"$(e)$", r"$(f)$"],
+                 [r"$(g)$", r"$(h)$", r"$(i)$"]]
     for i in range(len(f)):
         for j in range(len(gL)):
-            filename = f"../data/20240913_precision/obs_L{L:.0f}_kappa{kappa:.0f}_f{f[i]:.2f}_gL{gL[j]:.2f}.csv"
+            filename = f"{folder}/obs_L{L:.0f}_kappa{kappa:.0f}_f{f[i]:.2f}_gL{gL[j]:.2f}.csv"
             Sq2D, qB = get_Sq2D_data(filename)
             qBx, qBz = np.meshgrid(qB, qB)
             print(np.min(Sq2D), np.max(Sq2D))
@@ -392,9 +419,10 @@ def plot_Sq2D_fg(tex_lw=240.71031, ppi=72):
             axs[i, j].xaxis.set_minor_locator(plt.MultipleLocator(0.25))
             axs[i, j].yaxis.set_major_locator(plt.MultipleLocator(0.5))
             axs[i, j].yaxis.set_minor_locator(plt.MultipleLocator(0.25))
-            axs[i, j].set_title(r"$f=$"+f"{f[i]:.1f}"+r",$\gamma L=$"+f"{gL[j]:.0f}", fontsize=9, pad=2.5)
+            axs[i, j].set_title(r"$f=$"+f"{f[i]:.1f}"+r",$\gamma L=$"+f"{gL[j]:.1f}", fontsize=9, pad=2.5)
             # axs[i,j].set_title(r"$(f,\gamma L)=$"+f"({f[i]:.1f},{gL[j]:.1f})", fontsize=9, pad=0.3)
             axs[i, j].set_aspect("equal")
+            axs[i, j].text(0.75, 0.1, textlabel[i][j], fontsize=9, transform=axs[i, j].transAxes, color='black')
 
     # axs[0].tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=True, labelsize=7)
 
@@ -404,3 +432,74 @@ def plot_Sq2D_fg(tex_lw=240.71031, ppi=72):
     plt.savefig("./figures/Sq2D_fg.png", format="png", dpi=300)
     plt.show()
     plt.close()
+
+
+def plot_Sq2D_config_fg(tex_lw=240.71031, ppi=72):
+    folder = "../data/20240920_precision"
+    L = 200
+    kappa = 10.0
+    f = [0.00, 0.10, 0.20]
+    gL = [0.00, 0.60, 1.20]
+    fig, axs = plt.subplots(len(f), len(gL)*2, figsize=(tex_lw / ppi * 2, tex_lw / ppi * 1.2))
+    plt.rc("text", usetex=True)
+    plt.rc("text.latex", preamble=r"\usepackage{physics}")
+
+    for i in range(len(f)):
+        for j in range(len(gL)):
+            filename = f"{folder}/obs_L{L:.0f}_kappa{kappa:.0f}_f{f[i]:.2f}_gL{gL[j]:.2f}.csv"
+            Sq2D, qB = get_Sq2D_data(filename)
+            qBx, qBz = np.meshgrid(qB, qB)
+            print(np.min(Sq2D), np.max(Sq2D))
+            axs[i, j].pcolormesh(qBx, qBz, np.log10(Sq2D), vmax=0, vmin=-3, cmap="rainbow", shading='gouraud')
+            Cs = axs[i, j].contour(qBx, qBz, np.log10(Sq2D), vmax=0, vmin=-3, levels=np.linspace(-3, 0, 4), colors="gray", linewidths=0.5, linestyle=":")
+            axs[i, j].clabel(Cs, Cs.levels, inline=True, fontsize=7, fmt="%1.1f", colors="black")
+            # axs[i,j].set_xlabel(r"$Q_x$", fontsize=9, labelpad=-0.0)
+            lb = True if (i == 2) else False
+            ll = True if (j == 0) else False
+            axs[i, j].tick_params(which="both", direction="in", top="on", right="on", labelbottom=lb, labelleft=ll, labelsize=7)
+            if (ll):
+                axs[i, j].set_ylabel(r"$Q_z$", fontsize=9, labelpad=-0.0)
+            if (lb):
+                axs[i, j].set_xlabel(r"$Q_x$", fontsize=9, labelpad=-0.0)
+            axs[i, j].xaxis.set_major_locator(plt.MultipleLocator(0.5))
+            axs[i, j].xaxis.set_minor_locator(plt.MultipleLocator(0.25))
+            axs[i, j].yaxis.set_major_locator(plt.MultipleLocator(0.5))
+            axs[i, j].yaxis.set_minor_locator(plt.MultipleLocator(0.25))
+            axs[i, j].set_title(r"$f=$"+f"{f[i]:.1f}"+r",$\gamma L=$"+f"{gL[j]:.1f}", fontsize=9, pad=2.5)
+            # axs[i,j].set_title(r"$(f,\gamma L)=$"+f"({f[i]:.1f},{gL[j]:.1f})", fontsize=9, pad=0.3)
+            axs[i, j].set_aspect("equal")
+    dlim = 180
+    liml = np.array([[(-0.5, -0.5), (-0.2, -0.2), (-0.2, -0.2)],
+                     [(-0.25, -0.5), (-0.2, -0.2), (-0.2, -0.2)],
+                     [(-0.25, -0.5), (-0.2, -0.2), (-0.2, -0.2)]])
+
+    for i in range(len(f)):
+        for j in range(len(gL)):
+            finfo = f"L{L}_kappa{kappa:.0f}_f{f[i]:.2f}_gL{gL[j]:.2f}"
+            for k in range(30):
+                filename = f"{folder}/{finfo}/config_{k}.csv"
+                flip = False
+                if (j != 0 and i == 0):
+                    flip = True
+                ax_plot_2dconfig_from_file(axs[i, j+3], filename, "", 0, randflip=0, flip=flip)
+            axs[i, j+3].set_aspect("equal")
+            # axs[i, j].set_axis_off()
+            # print("i,j", i, j)
+            # print("xlim", liml[i, j][0], liml[i, j][0]+dlim)
+            # print("ylim", liml[i, j][1], liml[i, j][1]+dlim)
+            axs[i, j+3].set_xlim(liml[i, j][0]*dlim, (1+liml[i, j][0])*dlim)
+            axs[i, j+3].set_ylim(liml[i, j][1]*dlim, (1+liml[i, j][1])*dlim)
+            axs[i, j+3].tick_params(which="both", direction="in", top="on", right="on", labelbottom=False, labelleft=False, labelsize=7)
+            axs[i, j+3].set_title(r"$f=$"+f"{f[i]:.1f}"+r",$\gamma L=$"+f"{gL[j]:.1f}", fontsize=9, pad=2.5)
+            axs[i, j+3].set_axis_off()
+
+    # axs[0].tick_params(which="both", direction="in", top="on", right="on", labelbottom=True, labelleft=True, labelsize=7)
+
+    plt.tight_layout(pad=0.2)
+    # plt.subplots_adjust(wspace=0.05)
+    plt.savefig("./figures/Sq2D_config_fg.pdf", format="pdf")
+    plt.savefig("./figures/Sq2D_config_fg.png", format="png", dpi=300)
+    plt.show()
+    plt.close()
+
+

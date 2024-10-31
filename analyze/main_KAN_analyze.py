@@ -5,6 +5,7 @@ from ML_analyze import *
 import sys
 import random
 import time
+from KAN_analyze import *
 
 def main():
 
@@ -20,21 +21,10 @@ def main():
             parameters.append([L, i])
         if len(parameters) >= rand_max:
             break
-    print("parameters", parameters)
+    #print("parameters", parameters)
     print("total number of parameters", len(parameters))
 
-    #calc_svd(folder, parameters)
-    #plot_pddf_acf(folder, parameters, max_z=5, n_bin=100)
-    return 0
-    random.shuffle(parameters)
-    parameters_train = parameters[:int(0.7*len(parameters))]
-    parameters_test = parameters[int(0.7*len(parameters)):]
-
-    all_feature_mean, all_feature_std, all_gp_per_feature = GaussianProcess_optimization(folder, parameters_train)
-    all_feature_names, all_feature_mean, all_feature_std, all_gp_per_feature = read_gp_and_feature_stats(folder)
-
-    GaussianProcess_prediction(folder, parameters_test, all_feature_mean, all_feature_std, all_gp_per_feature)
-
+    get_data_for_KAN(folder, parameters)
 
 
 if __name__ == "__main__":

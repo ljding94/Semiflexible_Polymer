@@ -230,6 +230,7 @@ def GaussianProcess_optimization(folder, parameters_train):
     all_features, all_feature_names, all_Sq2D_flatten, qB = get_all_feature_Sq2D_data(folder, parameters_train)
     grid_size = 30
 
+    # 20240918 data use
     theta_per_feature = {
         "kappa": (np.logspace(-1, 0, grid_size), np.logspace(-3, -2, grid_size)),
         #"f": (np.logspace(-1, 0, grid_size), np.logspace(-3, -2, grid_size)),
