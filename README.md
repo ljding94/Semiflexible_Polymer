@@ -21,3 +21,37 @@ In this work, we present an off-lattice model for sampling the configuration spa
 Ref: [Machine Learning Inversion from Scattering for Mechanically Driven Polymers](https://arxiv.org/abs/2410.05574)
 
 In this work, we apply a ML inversion method to extract feature parameters from the scattering data of mechanically driven polymers. The ML inversion framework was trained based on the theoretically calculated data set of polymer system that is determined by the energy parameters: bending modulus $\kappa$, stretching force $f$ and shear rate $\gamma$. The inversion targets included these energy parameters and conformation variables such as end-to-end distance $R^2$, radius of gyration $R_g^2$ and off-diagonal component of the gyration tensor $R_{xz}$. The scattering function $I_{xz}(\mathbf{Q})$ of the polymer under different energy parameters was calculated using a MC method we previously developed\cite{ding2024off}. We demonstrate the feasibility of the ML inversion by carrying out PCA of the data set $\mathbf{F} = \left\{ I_{xz}(\mathbf{Q})\right\}$ and investigate the distribution of feature parameters by projecting the data set $\mathbf{F}$ to a 3 dimensional singular vectors space. The GPR was trained and validated, showing that inversion of the feature parameters can be achieved with high-precision.
+
+
+## How to use this code:
+
+### run the MC simulation
+1. Navigate to the code directory:
+    ```sh
+    cd Semiflexible_Polymer/code
+    ```
+2. Compile the program:
+    ```sh
+    make
+3. Run the program:
+    ```sh
+    ./main **args
+    ```
+
+There are two mods for running the program:
+1. args = [L, kappa, f, g, save_config_flag, path], where L is the polymer contour length, kappa is the bending modulus, f is the stretching force, g is the shear rate, save_config_flag triggers whether many sample configurations will be saved, and path is the folder path in which you want to save the output
+
+2. args = [L, n_index, path], this is the random kappa, f, g mods, for generating data set for the ML training, where n_index is simply a index number adding to the output file for your reference.
+
+
+
+### analyze the data
+
+1. use the python file in the analyze folder:
+
+main_analyze is for analyzing polymer response
+
+main_ML_analyze is for ML analysis
+
+
+
