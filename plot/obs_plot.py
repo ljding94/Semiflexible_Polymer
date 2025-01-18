@@ -260,6 +260,7 @@ def plot_obs_kappa(tex_lw=240.71031, ppi=72):
     plt.tight_layout(pad=0.2)
     #plt.subplots_adjust(wspace=0.2, hspace=0.25)
     plt.savefig("./figures/obs_kappa.pdf", format="pdf")
+    plt.savefig("./figures/obs_kappa.png", format="png", dpi=300)
     plt.show()
     plt.close()
 
@@ -391,6 +392,7 @@ def plot_obs_f(tex_lw=240.71031, ppi=72):
     '''
     plt.subplots_adjust(wspace=0.3, hspace=0.25)
     plt.savefig("./figures/obs_f.pdf", format="pdf")
+    plt.savefig("./figures/obs_f.png", format="png", dpi=300)
     # plt.subplot_tool()
     plt.show()
     plt.close()
@@ -517,6 +519,7 @@ def plot_obs_gamma(tex_lw=240.71031, ppi=72):
     plt.tight_layout(pad=0.1)
     plt.subplots_adjust(wspace=0.3, hspace=0.25)
     plt.savefig("./figures/obs_gamma.pdf", format="pdf")
+    plt.savefig("./figures/obs_gamma.png", format="png", dpi=300)
     plt.show()
     plt.close()
 
@@ -618,6 +621,7 @@ def plot_obs_f_3panel(tex_lw=240.71031, ppi=72):
 
     plt.subplots_adjust(wspace=0.3, hspace=0.25)
     plt.savefig("./figures/obs_f_3panel.pdf", format="pdf", dpi=300)
+    plt.savefig("./figures/obs_f_3panel.png", format="png", dpi=300)
     plt.show()
     plt.close()
 
@@ -713,6 +717,7 @@ def plot_obs_gamma_3panel(tex_lw=240.71031, ppi=72):
     plt.tight_layout(pad=0.1)
     plt.subplots_adjust(wspace=0.3, hspace=0.25)
     plt.savefig("./figures/obs_gamma_3panel.pdf", format="pdf", dpi=300)
+    plt.savefig("./figures/obs_gamma_3panel.png", format="png", dpi=300)
     plt.show()
     plt.close()
 
@@ -853,6 +858,7 @@ def plot_obs_f_3panel_sq(tex_lw=240.71031, ppi=72):
 
     plt.subplots_adjust(wspace=0.3, hspace=0.25)
     plt.savefig("./figures/obs_f_3panel.pdf", format="pdf", dpi=300)
+    plt.savefig("./figures/obs_f_3panel.png", format="png", dpi=300)
     plt.show()
     plt.close()
 
@@ -948,6 +954,7 @@ def plot_obs_gamma_3panel_sq(tex_lw=240.71031, ppi=72):
     plt.tight_layout(pad=0.1)
     plt.subplots_adjust(wspace=0.3, hspace=0.25)
     plt.savefig("./figures/obs_gamma_3panel.pdf", format="pdf", dpi=300)
+    plt.savefig("./figures/obs_gamma_3panel.png", format="png", dpi=300)
     plt.show()
     plt.close()
 
@@ -1025,6 +1032,7 @@ def plot_TOC(tex_lw=240.71031, ppi=72):
 
     plt.tight_layout(pad=0.1)
     plt.savefig("./figures/obs_TOC.pdf", format="pdf", dpi=300)
+    plt.savefig("./figures/obs_TOC.png", format="png", dpi=300)
     plt.show()
     plt.close()
 
@@ -1069,6 +1077,7 @@ def plot_obs_x_f_g(tex_lw=240.71031, ppi=72):
     # ax13.yaxis.set_minor_locator(plt.MultipleLocator(10))
     plt.tight_layout(pad=0.05)
     plt.savefig("./figures/obs_X_f.pdf", format="pdf")
+    plt.savefig("./figures/obs_X_f.png", format="png")
     plt.show()
     plt.close()
 
@@ -1273,5 +1282,6 @@ def plot_obs_f_g(tex_lw=240.71031, ppi=72):
 
     plt.tight_layout(pad=0.05)
     plt.savefig("./figures/obs_f_g.pdf", format="pdf")
+    plt.savefig("./figures/obs_f_g.png", format="png")
     plt.show()
     plt.close()

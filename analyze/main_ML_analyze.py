@@ -24,9 +24,9 @@ def main():
     print("parameters", parameters)
     print("total number of parameters", len(parameters))
 
-    #calc_svd(folder, parameters)
+    calc_svd(folder, parameters)
     #plot_pddf_acf(folder, parameters, max_z=5, n_bin=100)
-    #return 0
+    return 0
     random.shuffle(parameters)
     parameters_train = parameters[:int(0.7*len(parameters))]
     parameters_test = parameters[int(0.7*len(parameters)):]

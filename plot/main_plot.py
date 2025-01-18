@@ -23,11 +23,15 @@ def main():
 
     # for ML paper
     #plot_Sq2D_kappa()
-    #plot_config_fg()
+
+    # need some fix since I lost some code that failed to save
+    plot_config_fg()
+    #
+
     #plot_Sq2D_fg()
 
-    plot_SVD_data()
-    plot_SVD_feature_data()
+    #plot_SVD_data()
+    #plot_SVD_feature_data()
     #plot_LML_contour()
     #plot_GPR_prediction()
 

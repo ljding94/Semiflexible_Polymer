@@ -38,8 +38,11 @@ def ax_plot_2dconfig_from_file(ax, filename, color, xlim, flip=1, xshift=0, yshi
     if (-xlim > np.min(z) or xlim < np.max(z)):
         print("np.min(z), np.max(z)", np.min(z), np.max(z))
 
-    if (flip and random.random() < 0.5):
-        x, z = -x, -z
+    #if (flip and random.random() < 0.5):
+    #    x, z = -x, -z
+    if(flip and (z[-1]<0 or x[-1]<0)):
+        x = -x
+        z = -z
 
     ymin = np.min(y)
     ymax = np.max(y)
@@ -190,5 +193,6 @@ def plot_config_update_demo(tex_lw=240.71031, ppi=72):
     # plt.tight_layout(h_pad=-2, w_pad=-6)
 
     plt.savefig("figures/config_update_demo.pdf", format="pdf")
+    plt.savefig("figures/config_update_demo.png", format="png", dpi=300)
     plt.show()
     plt.close()

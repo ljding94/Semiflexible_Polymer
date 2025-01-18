@@ -88,7 +88,7 @@ def calc_svd(folder, parameters):
     plt.show()
     plt.close()
 
-    SqV = np.inner(all_Sq2D_flatten, np.transpose(svd.Vh))
+    SqV = np.dot(all_Sq2D_flatten, np.transpose(svd.Vh))
     plt.figure()
     fig = plt.figure(figsize=(2*len(all_feature_names), 8))
     axs = [fig.add_subplot(2, len(all_feature_names)//2 + 1, i+1, projection='3d') for i in range(len(all_feature_names))]
