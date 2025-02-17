@@ -12,13 +12,13 @@ def main():
     #plot_obs_gamma()
 
     #plot_obs_f_3panel()
-    #plot_obs_gamma_3panel()
+    plot_obs_gamma_3panel()
     #plot_obs_f_3panel_sq()
 
     #plot_Sq()
     #plot_Sq2D()
     #plot_Sq2D_f_conf()
-    #plot_Sq2D_g()
+    plot_Sq2D_g()
     #plot_TOC()
 
     # for ML paper

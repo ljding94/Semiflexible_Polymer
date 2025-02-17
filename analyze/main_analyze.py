@@ -32,7 +32,7 @@ def main():
         #plot_polymer_config(folder+f"/config_{finfo}.csv", finfo, True)
         plot_polymer_config(folder+f"/config_{finfo}.csv", finfo)
         #plot_MC_step(folder+f"/obs_MC_{finfo}.csv", finfo)
-    #plot_obs(folder, finfos, parameters, "f")
+    plot_obs(folder, finfos, parameters, "f")
     #return 0
 
     folder = "../data/20240820"
