@@ -34,7 +34,8 @@ struct observable
 
     std::vector<double> Sq{};  // structure factor
     std::vector<std::vector<double>> Sq2D{};  // structure factor
-    std::vector<double> qB{};  // qB for Sq, B is the bead-bead distance, which is 1 in our unit
+    std::vector<double> qB{};  // qB for 2D Sq, B is the bead-bead distance, which is 1 in our unit
+    std::vector<double> qB1d{}; // qB for Sq, B is the bead-bead distance, which is 1 in our unit
     std::vector<double> tts{}; // tangent-tangent correlation function, versus contour distance
     std::vector<double> spB{}; // s/B for tts calculation
 };

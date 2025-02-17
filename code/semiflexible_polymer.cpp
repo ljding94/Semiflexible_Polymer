@@ -713,7 +713,6 @@ void semiflexible_polymer::save_observable_to_file(std::string filename, std::ve
             {
                 f << "," << avg_Sq[j];
             }
-
             f << "\nstd/sqrt(number of polymer),NA,NA,NA,NA," << std_E / sqrt_M << "," << std_Tb / sqrt_M
               << "," << std_X / sqrt_M << "," << std_Y / sqrt_M
               << "," << std_Z / sqrt_M << "," << std_XsignZ / sqrt_M << "," << std_ZsignX / sqrt_M
@@ -725,6 +724,11 @@ void semiflexible_polymer::save_observable_to_file(std::string filename, std::ve
                 f << "," << std_Sq[j] / sqrt_M;
             }
 
+            f << "\n qB1d,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA";
+            for (int j = 0; j < obs_ensemble[0].qB1d.size(); j++)
+            {
+                f << "," << obs_ensemble[0].qB1d[j];
+            }
             f << "\n qB,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA";
             for (int j = 0; j < obs_ensemble[0].qB.size(); j++)
             {
@@ -789,22 +793,25 @@ observable semiflexible_polymer::measure_observable(int bin_num)
     obs.Sxz = Sij[4];
     obs.Syz = Sij[5];
 
-    double qB_i = -50.0 / L * M_PI;                // 0.2*M_PI/L; //0.1/L; ;
-    double dqB = 100.0 / L * M_PI / (bin_num - 1); // M_PI;//100.0/L; //M_PI;
+    double qB_i = -100.0 / L * M_PI;                // 0.2*M_PI/L; //0.1/L; ;
+    double dqB = 200.0 / L * M_PI / (bin_num - 1); // M_PI;//100.0/L; //M_PI;
     obs.qB.resize(bin_num);
+    obs.qB1d.resize(bin_num);
     for (int k = 0; k < bin_num; k++)
     {
         obs.qB[k] = qB_i + dqB * k;
     }
-    obs.Sq.resize(bin_num);
+    //obs.Sq.resize(bin_num);
     obs.Sq2D = calc_structure_factor_2d(obs.qB);
-    /*
+
+    double qB_i1d = 0.1 / L; // 0.1/L;
+    double qB_f1d = 1000.0 / L; // 100.0/L;
     for (int k = 0; k < bin_num; k++)
     {
-        obs.qB[k] = qB_i * std::pow(qB_f / qB_i, 1.0 * k / (bin_num - 1)); // uniform in log scale
+        obs.qB1d[k] = qB_i1d * std::pow(qB_f1d / qB_i1d, 1.0 * k / (bin_num - 1)); // uniform in log scale
     }
-    obs.Sq = calc_structure_factor(obs.qB);
-    */
+    obs.Sq = calc_structure_factor(obs.qB1d);
+
 
     obs.spB.resize(bin_num);
     obs.tts.resize(bin_num);
