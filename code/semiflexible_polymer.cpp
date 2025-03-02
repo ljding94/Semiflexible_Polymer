@@ -31,7 +31,7 @@ semiflexible_polymer::semiflexible_polymer(double L_, Energy_parameter Epar_, bo
     {
         Epar.kappa = 2 + 18 * rand_uni(gen);
         Epar.f = 0.5 * rand_uni(gen);
-        Epar.g = 2.0 * rand_uni(gen)/L;
+        Epar.g = (-1.0 + 2.0 * rand_uni(gen)) / L;
     }
     else
     {
@@ -793,8 +793,8 @@ observable semiflexible_polymer::measure_observable(int bin_num)
     obs.Sxz = Sij[4];
     obs.Syz = Sij[5];
 
-    double qB_i = -100.0 / L;                // 0.2*M_PI/L; //0.1/L; ;
-    double dqB = 200.0 / L /(bin_num - 1); // M_PI;//100.0/L; //M_PI;
+    double qB_i = -50.0*M_PI / L;               // 0.2*M_PI/L; //0.1/L; ;
+    double dqB = 100.0 / L / (bin_num - 1); // M_PI;//100.0/L; //M_PI;
     obs.qB.resize(bin_num);
     obs.qB1d.resize(bin_num);
     for (int k = 0; k < bin_num; k++)
@@ -803,7 +803,7 @@ observable semiflexible_polymer::measure_observable(int bin_num)
     }
     obs.Sq2D = calc_structure_factor_2d(obs.qB);
 
-    double qB_i1d = 0.1 / L; // 0.1/L;
+    double qB_i1d = 0.1 / L;    // 0.1/L;
     double qB_f1d = 1000.0 / L; // 100.0/L;
     for (int k = 0; k < bin_num; k++)
     {
@@ -812,14 +812,13 @@ observable semiflexible_polymer::measure_observable(int bin_num)
     obs.Sq.resize(bin_num);
     obs.Sq = calc_structure_factor(obs.qB1d);
 
-
     obs.spB.resize(bin_num);
     obs.tts.resize(bin_num);
     for (int k = 0; k < bin_num; k++)
     {
         obs.spB[k] = k; // 0, 1, 2, ..
     }
-    //obs.tts = calc_tangent_pair_correlation(obs.spB);
+    // obs.tts = calc_tangent_pair_correlation(obs.spB);
 
     return obs;
 }
@@ -866,7 +865,9 @@ std::vector<std::vector<double>> semiflexible_polymer::calc_structure_factor_2d(
     {
         odd_bin_num = 0;
         bin0 = bin_num / 2;
-    }else{
+    }
+    else
+    {
         odd_bin_num = 1;
         bin0 = (bin_num - 1) / 2;
     }
@@ -904,11 +905,11 @@ std::vector<std::vector<double>> semiflexible_polymer::calc_structure_factor_2d(
                     if ((odd_bin_num == 1 & kz != bin0))
                     {
                         SqB_Re[2 * bin0 - kx][2 * bin0 - kz] += SqB_Re_buff;
-                    } else if (odd_bin_num == 0)
-                    {
-                        SqB_Re[2 * bin0 - 1 - kx][2 * bin0 -1 - kz] += SqB_Re_buff;
                     }
-
+                    else if (odd_bin_num == 0)
+                    {
+                        SqB_Re[2 * bin0 - 1 - kx][2 * bin0 - 1 - kz] += SqB_Re_buff;
+                    }
                 }
             }
         }

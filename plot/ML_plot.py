@@ -75,6 +75,7 @@ def calc_maximum_profile_likelihood(svdS):
 
 def plot_SVD_data(tex_lw=240.71031, ppi=72):
     folder = "../data/20240924_random"
+    #folder = "../data/20240918_random" # 18 used the wrong convention
     rand_max = 1024
     L = 200
     parameters = [[L, rand_num] for rand_num in range(rand_max)]
@@ -150,11 +151,12 @@ def plot_SVD_data(tex_lw=240.71031, ppi=72):
 
 def plot_SVD_feature_data(tex_lw=240.71031, ppi=72):
     folder = "../data/20240924_random"
+    #folder = "../data/20240918_random"
     all_feature, sqv0, sqv1, sqv2 = read_SVD_data(folder)
     all_feature_name = ["kappa", "f", "gL", "R2", "Rg2", "Sxx", "Syy", "Szz", "Sxy", "Sxz", "Syz"]
-    feature_to_tex = {"kappa": r"$\kappa$", "f": r"$f$", "gL": r"$\gamma L$", "R2": r"$R^2/L^2$", "Rg2": r"$R_g^2/L$", "Sxz": r"$S_{xz}$"}
+    feature_to_tex = {"kappa": r"$\kappa$", "f": r"$f$", "gL": r"$\gamma L$", "R2": r"$R^2/L^2$", "Rg2": r"$R_g^2/L$", "Sxz": r"$R_{xz}/R_g^2$"}
 
-    fig = plt.figure(figsize=(tex_lw / ppi * 1, tex_lw / ppi * 1.15))
+    fig = plt.figure(figsize=(tex_lw / ppi * 1, tex_lw / ppi * 1.2))
     plt.rc("text", usetex=True)
     plt.rc("text.latex", preamble=r"\usepackage{physics}")
 
@@ -185,8 +187,8 @@ def plot_SVD_feature_data(tex_lw=240.71031, ppi=72):
         if feature_name == "Rg2":
             mu /= L
         ax = axs[i]
-        scatter = ax.scatter(sqv0, sqv1, sqv2, s=0.5, c=mu, cmap="rainbow")
-        ax.view_init(elev=15.0, azim=-105)
+        scatter = ax.scatter(sqv0, sqv1, sqv2, s=0.5, c=mu, cmap="rainbow", rasterized=True)
+        ax.view_init(elev=25.0, azim=-100)
 
         ax.set_xlabel(r"$FV0$", fontsize=9, labelpad=-12, rotation=0)
         ax.set_ylabel(r"$FV1$", fontsize=9, labelpad=-5, rotation=0)
@@ -225,7 +227,7 @@ def plot_SVD_feature_data(tex_lw=240.71031, ppi=72):
         axs[i].text2D(0.7, 0.8, annotation[i], transform=axs[i].transAxes, fontsize=9)
 
     # plt.tight_layout( h_pad=0.2, w_pad=1.7) #, h_pad=-3, w_pad=2)
-    plt.tight_layout(pad=0.1, w_pad=1.2)
+    plt.tight_layout(pad=0.5, w_pad=1.2)
     plt.savefig("figures/SVD_feature.pdf", format="pdf", dpi=300)
     plt.savefig("figures/SVD_feature.png", format="png", dpi=300)  # png figure for slides making
     plt.show()
@@ -239,8 +241,10 @@ def get_LML_date(folder, feature):
 
 
 def plot_LML_contour(tex_lw=240.71031, ppi=72):
-    folder = "../data/20240916_random"
-    feature_to_tex = {"kappa": r"$\kappa$", "f": r"$f$", "gL": r"$\gamma L$", "R2": r"$R^2/L^2$", "Rg2": r"$R_g^2/L$", "Sxz": r"$S_{xz}$"}
+    #folder = "../data/20240916_random"
+    folder = "../data/20240918_random" # the data used fo submission arxiv
+    #folder = "../data/20240924_random"
+    feature_to_tex = {"kappa": r"$\kappa$", "f": r"$f$", "gL": r"$\gamma L$", "R2": r"$R^2/L^2$", "Rg2": r"$R_g^2/L$", "Sxz": r"$R_{xz}/R_g^2$"}
     fig = plt.figure(figsize=(tex_lw / ppi * 1, tex_lw / ppi * 1.15))
     plt.rc("text", usetex=True)
     plt.rc("text.latex", preamble=r"\usepackage{physics}")
@@ -260,16 +264,16 @@ def plot_LML_contour(tex_lw=240.71031, ppi=72):
         (np.logspace(-1, 0, grid_size), np.logspace(-3, -2, grid_size)),
         (np.logspace(-1, 0, grid_size), np.logspace(-3, -2, grid_size)),
         (np.logspace(0, 0.5, grid_size), np.logspace(-5, -4, grid_size)),
-        (np.logspace(0.2, 0.5, grid_size), np.logspace(-7, -6, grid_size)),
-        (np.logspace(0.3, 0.6, grid_size), np.logspace(-7, -6, grid_size)),
+        (np.logspace(0.2, 0.4, grid_size), np.logspace(-7, -5, grid_size)),
+        (np.logspace(0.3, 0.6, grid_size), np.logspace(-7, -5, grid_size)),
     ]
     ticklabels = [
         ((r"$10^{-1}$", r"$10^{0}$"), (r"$10^{-3}$", r"$10^{-2}$")),
         ((r"$10^{-1}$", r"$10^{0}$"), (r"$10^{-3}$", r"$10^{-2}$")),
         ((r"$10^{-1}$", r"$10^{0}$"), (r"$10^{-3}$", r"$10^{-2}$")),
         ((r"$10^{0}$", r"$10^{0.5}$"), (r"$10^{-5}$", r"$10^{-4}$")),
-        ((r"$10^{0.2}$", r"$10^{0.5}$"), (r"$10^{-7}$", r"$10^{-6}$")),
-        ((r"$10^{0.3}$", r"$10^{0.6}$"), (r"$10^{-7}$", r"$10^{-6}$")),
+        ((r"$10^{0.2}$", r"$10^{0.4}$"), (r"$10^{-7}$", r"$10^{-5}$")),
+        ((r"$10^{0.3}$", r"$10^{0.6}$"), (r"$10^{-7}$", r"$10^{-5}$")),
     ]
 
     # "kappa": (np.logspace(-1, 0, grid_size), np.logspace(-3, -2, grid_size)),
@@ -334,10 +338,11 @@ def get_GRP_data(folder, feature):
 
 def plot_GPR_prediction(tex_lw=240.71031, ppi=72):
     folder = "../data/20240918_random"
+    #folder = "../data/20240924_random"
 
     all_feature, sqv0, sqv1, sqv2 = read_SVD_data(folder)
     all_feature_name = ["kappa", "f", "gL", "R2", "Rg2", "Sxx", "Syy", "Szz", "Sxy", "Sxz", "Syz"]
-    feature_to_tex = {"kappa": r"$\kappa$", "f": r"$f$", "gL": r"$\gamma L$", "R2": r"$R^2/L^2$", "Rg2": r"$R_g^2/L$", "Sxz": r"$S_{xz}$"}
+    feature_to_tex = {"kappa": r"$\kappa$", "f": r"$f$", "gL": r"$\gamma L$", "R2": r"$R^2/L^2$", "Rg2": r"$R_g^2/L$", "Sxz": r"$R_{xz}/R_g^2$"}
 
     fig = plt.figure(figsize=(tex_lw / ppi * 1, tex_lw / ppi * 1.15))
     plt.rc("text", usetex=True)

@@ -231,12 +231,12 @@ def GaussianProcess_optimization(folder, parameters_train):
     grid_size = 30
 
     theta_per_feature = {
-        "kappa": (np.logspace(-1, 0, grid_size), np.logspace(-3, -2, grid_size)),
+        #"kappa": (np.logspace(-1, 0, grid_size), np.logspace(-3, -2, grid_size)),
         #"f": (np.logspace(-1, 0, grid_size), np.logspace(-3, -2, grid_size)),
         #"gL": (np.logspace(-1, 0, grid_size), np.logspace(-3, -2, grid_size)),
         #"R2": (np.logspace(0, 0.5, grid_size), np.logspace(-5, -4, grid_size)),
-        #"Rg2": (np.logspace(0.2, 0.4, grid_size), np.logspace(-7, -5, grid_size)),
-        #"Sxz": (np.logspace(0.3, 0.6, grid_size), np.logspace(-7, -5, grid_size)), # to run
+        "Rg2": (np.logspace(0.2, 0.4, grid_size), np.logspace(-7, -5, grid_size)),
+        "Sxz": (np.logspace(0.3, 0.6, grid_size), np.logspace(-7, -5, grid_size)), # to run
     }
 
     # feature normalization

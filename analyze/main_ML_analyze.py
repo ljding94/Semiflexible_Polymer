@@ -10,7 +10,9 @@ import time
 def main():
 
     print("analyzing data using ML model")
-    folder = "../data/20240924_random"
+    #folder = "../data/20240924_random"
+    folder = "../data/20240916_random"
+
     rand_num = 5500
     rand_max = 4500
     L = 200
@@ -24,17 +26,17 @@ def main():
     print("parameters", parameters)
     print("total number of parameters", len(parameters))
 
-    calc_svd(folder, parameters)
+    #calc_svd(folder, parameters)
     #plot_pddf_acf(folder, parameters, max_z=5, n_bin=100)
-    return 0
+    #return 0
     random.shuffle(parameters)
     parameters_train = parameters[:int(0.7*len(parameters))]
     parameters_test = parameters[int(0.7*len(parameters)):]
 
     all_feature_mean, all_feature_std, all_gp_per_feature = GaussianProcess_optimization(folder, parameters_train)
-    all_feature_names, all_feature_mean, all_feature_std, all_gp_per_feature = read_gp_and_feature_stats(folder)
+    #all_feature_names, all_feature_mean, all_feature_std, all_gp_per_feature = read_gp_and_feature_stats(folder)
 
-    GaussianProcess_prediction(folder, parameters_test, all_feature_mean, all_feature_std, all_gp_per_feature)
+    #GaussianProcess_prediction(folder, parameters_test, all_feature_mean, all_feature_std, all_gp_per_feature)
 
 
 
