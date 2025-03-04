@@ -30,7 +30,7 @@ semiflexible_polymer::semiflexible_polymer(double L_, Energy_parameter Epar_, bo
     if (random_Epar)
     {
         Epar.kappa = 2 + 18 * rand_uni(gen);
-        Epar.f = 0.5 * rand_uni(gen);
+        Epar.f = (0.5 * rand_uni(gen));
         Epar.g = (-1.0 + 2.0 * rand_uni(gen)) / L;
     }
     else

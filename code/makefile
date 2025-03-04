@@ -1,4 +1,4 @@
-Compile=g++ -g -std=c++20 -O3 # improve run time e.g. 10s to 4s
+Compile=g++ -g -std=c++2a -O3 # improve run time e.g. 10s to 4s
 semiflexible_polymer: main.o semiflexible_polymer.o
 	$(Compile) -o semiflexible_polymer main.o semiflexible_polymer.o
 main.o: main.cpp semiflexible_polymer.h

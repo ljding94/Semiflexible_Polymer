@@ -7,13 +7,14 @@ from torch.utils.data import Subset
 
 def main():
 
-    folder = "../data/20250217"
+    #folder = "../data/20250217" # used for manusctip as of Mar 3
+    folder = "../data/20250301_random"
 
     if 1:
         print("loading the data")
         L = 200
-        rand_num = 5500
-        rand_max = 4500
+        rand_num = 6000
+        rand_max = 5000
         parameters = generate_parameter_list(folder, L, rand_num, rand_max)
         print("Number of parameters:", len(parameters))
 
@@ -31,8 +32,6 @@ def main():
             "images_std": dataset.images_std,
             "qB": dataset.qB,
         }
-
-        print("qB:", dataset.qB)
 
         np.savez(os.path.join(folder, "normalization_params.npz"), **normalization_data)
         print(f"Normalization parameters saved to {folder}/normalization_params.npz")
@@ -89,15 +88,60 @@ def main():
         generated_image = generate_scattering(converterP2L, vae.decoder, s_params, device=device)
         print("Generated image shape:", generated_image.shape)  # Expected: [1, 1, nq, nq]
 
-    if 0:
+    if 1:
+        # test infer feature
+        # Load the trained models.
+        vae, converterP2L, converterL2F = load_models(latent_dim, nq, folder)
+        encoder = vae.encoder
+        # Get one sample from the test set.
+        fit_iter = iter(fit_loader)
+        params_batch, features_batch, images_batch = next(fit_iter)
+        # Pick the first sample.
+        input_image = images_batch[1:2].to(device)  # normalized input image.
+        gt_normalized = features_batch[1:2]  # normalized ground truth parameters.
+        # Infer the polymer features from the target image.
+        inferred_features = infer_feature(encoder, converterL2F, input_image, device=device)
+        # Denormalize the ground truth polymer parameters.
+        gt_raw = gt_normalized.cpu().numpy()
+        print("Inferred polymer features:", inferred_features)
+        print("Ground truth polymer features:", gt_raw)
+        print("---------------------------------------------------")
+
+    if 1:
+        # inferred all features
+        # Load the trained models.
+        vae, converterP2L, converterL2F = load_models(latent_dim, nq, folder)
+        encoder = vae.encoder
+        inferred_features, ground_truth_features = infer_all_features(
+            fit_loader,
+            encoder,
+            converterL2F,
+            device=device,
+        )
+
+        # Denormalize the ground truth polymer parameters.
+        ground_truth_features = ground_truth_features * np.array(dataset.features_std) + np.array(dataset.features_mean)
+        # Denormalize the inferred features.
+        inferred_features = inferred_features * np.array(dataset.features_std) + np.array(dataset.features_mean)
+
+        # Save the inferred features and ground truth features to a text file.
+        combined_data = np.hstack((inferred_features, ground_truth_features))
+        header = "inferred_kappa, inferred_f, inferred_gL, gt_kappa, gt_f, gt_gL"
+        np.savetxt(os.path.join(folder, "inferred_features.txt"), combined_data, header=header, delimiter=",", comments="")
+        print(f"Inferred features saved to {folder}/inferred_features.txt")
+
+    if 1:
+        plot_infer_feature(folder)
+
+    if 1:
         # test fitting parameters
         # Load the trained models.
         vae, converterP2L, converterL2F = load_models(latent_dim, nq, folder)
         decoder = vae.decoder
 
         # Get one sample from the test set.
-        fit_iter = iter(fit_loader)
-        params_batch, features_batch, images_batch = next(fit_iter)  # params, features shape: [B, 3], images shape: [B, 1, H, W]
+        test_iter = iter(test_loader)
+        params_batch, features_batch, images_batch = next(test_iter)  # params, features shape: [B, 3], images shape: [B, 1, H, W]
         # Pick the first sample.
 
         target_image = images_batch[1:2].to(device)  # normalized target image.
@@ -120,7 +164,7 @@ def main():
         print("Fitted raw polymer parameters:", fitted_raw)
         print("Ground truth raw polymer parameters:", gt_raw)
 
-    if 0:
+    if 1:
         # fit all params
         # Load the trained models.
         vae, converterP2L, converterL2F = load_models(latent_dim, nq, folder)
@@ -147,54 +191,11 @@ def main():
         np.savetxt(os.path.join(folder, "ls_fitted_data.txt"), combined_data, header=header, delimiter=",", comments="")
         print(f"Latent variables saved to {folder}/ls_fitted_data.txt")
 
-    if 0:
+    if 1:
         # Plot the fitted parameters vs. ground truth.
         plot_LS_fitting(folder)
 
-    if 0:
-        # test infer feature
-        # Load the trained models.
-        vae, converterP2L, converterL2F = load_models(latent_dim, nq, folder)
-        encoder = vae.encoder
-        # Get one sample from the test set.
-        fit_iter = iter(fit_loader)
-        params_batch, features_batch, images_batch = next(fit_iter)
-        # Pick the first sample.
-        input_image = images_batch[1:2].to(device)  # normalized input image.
-        gt_normalized = features_batch[1:2]  # normalized ground truth parameters.
-        # Infer the polymer features from the target image.
-        inferred_features = infer_feature(encoder, converterL2F, input_image, device=device)
-        # Denormalize the ground truth polymer parameters.
-        gt_raw = gt_normalized.cpu().numpy()
-        print("Inferred polymer features:", inferred_features)
-        print("Ground truth polymer features:", gt_raw)
-        print("---------------------------------------------------")
 
-    if 0:
-        # inferred all features
-        # Load the trained models.
-        vae, converterP2L, converterL2F = load_models(latent_dim, nq, folder)
-        encoder = vae.encoder
-        inferred_features, ground_truth_features = infer_all_features(
-            fit_loader,
-            encoder,
-            converterL2F,
-            device=device,
-        )
-
-        # Denormalize the ground truth polymer parameters.
-        ground_truth_features = ground_truth_features * np.array(dataset.features_std) + np.array(dataset.features_mean)
-        # Denormalize the inferred features.
-        inferred_features = inferred_features * np.array(dataset.features_std) + np.array(dataset.features_mean)
-
-        # Save the inferred features and ground truth features to a text file.
-        combined_data = np.hstack((inferred_features, ground_truth_features))
-        header = "inferred_kappa, inferred_f, inferred_gL, gt_kappa, gt_f, gt_gL"
-        np.savetxt(os.path.join(folder, "inferred_features.txt"), combined_data, header=header, delimiter=",", comments="")
-        print(f"Inferred features saved to {folder}/inferred_features.txt")
-
-    if 0:
-        plot_infer_feature(folder)
 
 
 if __name__ == "__main__":
