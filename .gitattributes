@@ -1,0 +1,5 @@
+data4plot filter=lfs diff=lfs merge=lfs -text
+data4plot/20240920_MC.tar.gz filter=lfs diff=lfs merge=lfs -text
+data4plot/20240924_GPR.tar.gz filter=lfs diff=lfs merge=lfs -text
+data4plot/20250308_VAE.tar.gz.a filter=lfs diff=lfs merge=lfs -text
+data4plot/20250308_VAE.tar.gz.b filter=lfs diff=lfs merge=lfs -text
